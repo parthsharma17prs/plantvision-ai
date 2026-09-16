@@ -23,3 +23,19 @@ export async function syncDriveNow() {
 export async function getLatestResult() {
   return fetchJson("/api/latest-result");
 }
+
+export async function diagnosePest(imageDataUrl, disease = "Unknown") {
+  return fetchJson("/api/diagnose/pest", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl, disease }),
+  });
+}
+
+export async function diagnoseNutrition(imageDataUrl, disease = "Unknown") {
+  return fetchJson("/api/diagnose/nutrition", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ imageDataUrl, disease }),
+  });
+}

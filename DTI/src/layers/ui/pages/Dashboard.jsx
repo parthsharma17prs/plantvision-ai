@@ -444,13 +444,10 @@ function Dashboard() {
       <div className="premium-card space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-xs tracking-[0.2em] text-leafPrimary">DIAGNOSTIC HISTORY LOG</p>
-          <a
-            href="/api/history/export"
-            className="text-xs text-leafSecondary hover:underline"
-            download
-          >
-            📥 Export CSV
-          </a>
+          <span className="text-xs px-2.5 py-1 rounded-full bg-leafPrimary/10 text-leafPrimary border border-leafPrimary/20 flex items-center gap-1.5 font-mono">
+            <span className="h-1.5 w-1.5 rounded-full bg-leafPrimary animate-pulse" />
+            {history.length} Scans Archived
+          </span>
         </div>
         <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
           {history.length === 0 ? (

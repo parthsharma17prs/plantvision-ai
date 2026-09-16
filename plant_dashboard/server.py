@@ -653,17 +653,6 @@ def latest_result():
 def get_history():
     return jsonify(db_get_history())
 
-@app.route("/api/history/export")
-def export_history():
-    data = db_get_history()
-    csv_lines = ["Filename,Timestamp,Disease,Confidence,Severity,HealthScore,Treatment"]
-    for row in data:
-        t = row.get("treatment", "").replace('"', '""')
-        line = f'"{row.get("filename")}","{row.get("timestamp")}","{row.get("top_label")}",{row.get("top_confidence")},"{row.get("severity")}",{row.get("health_score")},"{t}"'
-        csv_lines.append(line)
-    csv_text = "\n".join(csv_lines)
-    return Response(csv_text, mimetype="text/csv", headers={"Content-disposition": "attachment; filename=plantvision_diagnosis_history.csv"})
-
 @app.route("/api/upload", methods=["POST"])
 def upload_leaf():
     try:

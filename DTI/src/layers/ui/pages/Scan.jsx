@@ -141,14 +141,45 @@ function Scan() {
         </div>
       )}
 
-      <div className="glass-panel rounded-2xl p-5 space-y-2">
-        <p className="text-xs tracking-[0.2em] text-leafPrimary">HOW IT WORKS</p>
-        <ol className="text-sm text-slate-400 space-y-1 list-decimal list-inside">
-          <li>Enable camera or upload a leaf image</li>
-          <li>Click <strong className="text-slate-200">Scan Now</strong> to run AI analysis</li>
-          <li>YOLOv8 detects disease regions with bounding boxes</li>
-          <li>View disease name, confidence, severity, and treatment on Results page</li>
-        </ol>
+      {/* Tri-Engine Diagnostic Pipeline Architecture */}
+      <div className="glass-panel rounded-2xl p-6 space-y-4 border border-leafPrimary/20">
+        <div className="flex items-center justify-between border-b border-white/10 pb-3">
+          <p className="text-xs tracking-[0.2em] text-leafPrimary font-mono uppercase">
+            Tri-Engine Multi-Spectral Diagnostic Pipeline
+          </p>
+          <span className="text-[11px] font-mono text-leafSecondary bg-leafSecondary/10 px-2 py-0.5 rounded-full border border-leafSecondary/30">
+            v3.2 Active
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <div className="rounded-xl bg-black/20 p-3.5 border border-white/5 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🔬</span>
+              <span className="text-xs font-semibold text-slate-200">1. YOLOv8 Pathology</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Spatial localization of fungal, bacterial, and viral foliar lesions with bounding boxes and severity percentages.
+            </p>
+          </div>
+          <div className="rounded-xl bg-black/20 p-3.5 border border-white/5 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🐛</span>
+              <span className="text-xs font-semibold text-leafSecondary">2. Pest Detection Adapter</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Diagnoses mites, aphids, thrips, and leafminers with biocontrol predators, organic neem IPM, and exact spray dosages.
+            </p>
+          </div>
+          <div className="rounded-xl bg-black/20 p-3.5 border border-white/5 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🧪</span>
+              <span className="text-xs font-semibold text-emerald-400">3. Nutrition Deficiency Engine</span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Multi-spectral analysis of chlorosis & necrosis mapping N-P-K-Mg-Fe-Ca-Zn balances with foliar spray recipes.
+            </p>
+          </div>
+        </div>
       </div>
     </section>
   );

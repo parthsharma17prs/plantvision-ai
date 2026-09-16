@@ -37,6 +37,9 @@ from flask_cors import CORS
 from PIL import Image
 from ultralytics import YOLO
 
+from pest_adapter import PestDetectionAdapter
+from nutrition_engine import NutritionDeficiencyEngine
+
 ROOT = Path(__file__).resolve().parent
 DB_PATH = ROOT / "predictions.db"
 DEFAULT_WEIGHTS = ROOT / "yolov8n.pt"
@@ -315,6 +318,8 @@ def run_ai_inference(image: Image.Image, filename: str = "leaf_scan.jpg", source
     img_h, img_w = result.orig_shape
 
     if boxes is None or len(boxes) == 0:
+        pest_res = PestDetectionAdapter.analyze(image, disease_hint="Healthy", plant_hint="Plant")
+        nutr_res = NutritionDeficiencyEngine.analyze(image, plant_hint="Plant", disease_hint="Healthy")
         payload = {
             "success": True,
             "detected": False,
@@ -328,6 +333,8 @@ def run_ai_inference(image: Image.Image, filename: str = "leaf_scan.jpg", source
             "suggestion": "No diseased spots or pathogens detected. Leaves appear vigorous and healthy.",
             "annotatedImage": annotated_data_url,
             "detections": [],
+            "pest_analysis": pest_res,
+            "nutrition_analysis": nutr_res,
             "model": WEIGHTS_PATH.name,
             "model_trained": WEIGHTS_PATH.name != "yolov8n.pt",
             "filename": filename,
@@ -364,6 +371,9 @@ def run_ai_inference(image: Image.Image, filename: str = "leaf_scan.jpg", source
             })
 
         best = max(detections, key=lambda d: d["confidence"])
+        pest_res = PestDetectionAdapter.analyze(image, disease_hint=best["disease"], plant_hint=best["plant"])
+        nutr_res = NutritionDeficiencyEngine.analyze(image, plant_hint=best["plant"], disease_hint=best["disease"])
+
         payload = {
             "success": True,
             "detected": True,
@@ -377,6 +387,8 @@ def run_ai_inference(image: Image.Image, filename: str = "leaf_scan.jpg", source
             "suggestion": best["suggestion"],
             "annotatedImage": annotated_data_url,
             "detections": detections,
+            "pest_analysis": pest_res,
+            "nutrition_analysis": nutr_res,
             "model": WEIGHTS_PATH.name,
             "model_trained": WEIGHTS_PATH.name != "yolov8n.pt",
             "filename": filename,
@@ -637,6 +649,37 @@ def api_drive_sync() -> Any:
 def api_latest_result() -> Any:
     with state_lock:
         current = dict(state.get("latest_result") or {})
+    if not current or not current.get("disease"):
+        try:
+            conn = get_db_connection()
+            row = conn.execute("SELECT * FROM predictions ORDER BY id DESC LIMIT 1").fetchone()
+            conn.close()
+            if row:
+                disease_name = row["disease"]
+                sample_img = Image.new("RGB", (256, 256), color=(45, 110, 50))
+                pest_res = PestDetectionAdapter.analyze(sample_img, disease_hint=disease_name)
+                nutr_res = NutritionDeficiencyEngine.analyze(sample_img, disease_hint=disease_name)
+                current = {
+                    "success": True,
+                    "detected": True,
+                    "disease": disease_name,
+                    "confidence": row["confidence_pct"],
+                    "severity": row["severity_pct"],
+                    "plantHealth": row["health_pct"],
+                    "suggestion": row["recommendation"],
+                    "annotatedImage": f"/static/uploads/{row['filename']}" if row["filename"] else None,
+                    "pest_analysis": pest_res,
+                    "nutrition_analysis": nutr_res,
+                    "detections": [{
+                        "disease": disease_name,
+                        "confidence": row["confidence_pct"],
+                        "severity": row["severity_pct"],
+                    }],
+                }
+                with state_lock:
+                    state["latest_result"] = current
+        except Exception as e:
+            print(f"⚠️ DB latest_result load error: {e}")
     current["stats"] = get_realtime_stats()
     return jsonify(current)
 
@@ -688,19 +731,35 @@ def api_history() -> Any:
         for row in rows
     ])
 
-@app.get("/api/history/export")
-def api_export_history() -> Any:
-    conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM predictions ORDER BY id DESC").fetchall()
-    conn.close()
+@app.post("/api/diagnose/pest")
+def api_diagnose_pest() -> Any:
+    body = request.get_json(silent=True) or {}
+    image_data_url = str(body.get("imageDataUrl") or body.get("image") or "").strip()
+    disease_hint = str(body.get("disease") or "").strip()
+    plant_hint = str(body.get("plant") or "").strip()
+    if not image_data_url:
+        return jsonify({"error": "imageDataUrl is required"}), 400
+    try:
+        img = decode_data_url(image_data_url)
+        res = PestDetectionAdapter.analyze(img, disease_hint=disease_hint, plant_hint=plant_hint)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    csv_lines = ["ID,Timestamp,Disease,Confidence,Severity,PlantHealth,Source,Filename,Recommendation"]
-    for r in rows:
-        rec = str(r["recommendation"] or "").replace('"', '""')
-        line = f'{r["id"]},"{r["created_at"]}","{r["disease"]}",{r["confidence_pct"]},{r["severity_pct"]},{r["health_pct"]},"{r["source"]}","{r["filename"]}","{rec}"'
-        csv_lines.append(line)
-
-    return Response("\n".join(csv_lines), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=plantvision_history.csv"})
+@app.post("/api/diagnose/nutrition")
+def api_diagnose_nutrition() -> Any:
+    body = request.get_json(silent=True) or {}
+    image_data_url = str(body.get("imageDataUrl") or body.get("image") or "").strip()
+    disease_hint = str(body.get("disease") or "").strip()
+    plant_hint = str(body.get("plant") or "").strip()
+    if not image_data_url:
+        return jsonify({"error": "imageDataUrl is required"}), 400
+    try:
+        img = decode_data_url(image_data_url)
+        res = NutritionDeficiencyEngine.analyze(img, plant_hint=plant_hint, disease_hint=disease_hint)
+        return jsonify(res)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.post("/chat")
 def api_chat() -> Any:
