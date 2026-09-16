@@ -52,7 +52,7 @@ function Login() {
         setSuccessMessage(response.message || "Login successful");
         if (response.user) {
           localStorage.setItem("plantvision-user", JSON.stringify(response.user));
-          navigate("/community");
+          navigate("/dashboard");
         }
       }
       setForm((prev) => ({ ...prev, password: "" }));
@@ -78,8 +78,8 @@ function Login() {
                 <span className="font-semibold text-leafSecondary">{sessionUser.email}</span>
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <Button type="button" variant="secondary" className="!px-4 !py-2 text-xs" onClick={() => navigate("/community")}>
-                  {t("login_go_community", "Go to Community")}
+                <Button type="button" variant="secondary" className="!px-4 !py-2 text-xs" onClick={() => navigate("/dashboard")}>
+                  {t("login_go_dashboard", "Go to Dashboard")}
                 </Button>
                 <button
                   type="button"
@@ -112,8 +112,8 @@ function Login() {
           </div>
 
           <div>
-            <h2 className="text-2xl font-bold">{mode === "login" ? t("login_welcome", "Welcome Back") : t("signup_welcome", "Join the Community")}</h2>
-            <p className="mt-2 text-sm text-slate-300">{mode === "login" ? t("login_subtitle", "Log in to access your farm dashboard.") : t("signup_subtitle", "Create an account to start sharing.")}</p>
+            <h2 className="text-2xl font-bold">{mode === "login" ? t("login_welcome", "Welcome Back") : t("signup_welcome", "Create an Account")}</h2>
+            <p className="mt-2 text-sm text-slate-300">{mode === "login" ? t("login_subtitle", "Log in to access your farm dashboard.") : t("signup_subtitle", "Create an account to get started.")}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-5">

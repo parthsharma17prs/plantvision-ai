@@ -10,7 +10,6 @@ Flask server running on port 5050 with:
 5. Exportable Prediction History
 6. Live Weather & Agricultural Spraying Adviser
 7. AgriBot AI Farming Chatbot
-8. Farmer Community Forum (Posts, Likes, Comments)
 """
 
 import os, io, time, json, threading, base64, uuid
@@ -45,7 +44,6 @@ if not os.path.exists(MODEL_PATH):
 
 STATIC_DIR = os.path.join(SCRIPT_DIR, "static")
 CACHE_IMAGE_PATH = os.path.join(STATIC_DIR, "latest.jpg")
-COMMUNITY_FILE = os.path.join(SCRIPT_DIR, "community_posts.json")
 
 # ─── Shared State ────────────────────────────────────────────────────────────
 state = {
@@ -84,50 +82,6 @@ try:
 except Exception as err:
     print(f"⚠️ [MongoDB] Connection fallback: {err}. Using local SQLite/JSON persistence.", flush=True)
     use_mongodb = False
-
-# Load/initialize community posts
-community_posts = [
-    {
-        "id": "post-1",
-        "author": "Rajesh Kumar (Assam)",
-        "avatar": "👨‍🌾",
-        "title": "Severe Bird Eye Spot outbreak after heavy monsoon rains",
-        "category": "Disease Control",
-        "content": "Noticed small reddish-brown circular spots expanding on young tea shoots. Applied Hexaconazole spray 2ml/L following PlantVision advice. Seeing good recovery!",
-        "timestamp": "2026-09-15 14:30:00",
-        "likes": 12,
-        "comments": [
-            {"author": "Dr. S. Mazumdar", "text": "Good call! Make sure to prune shade trees to reduce leaf wetness duration.", "timestamp": "2026-09-15 15:10:00"}
-        ]
-    },
-    {
-        "id": "post-2",
-        "author": "Ananya Sharma (Darjeeling)",
-        "avatar": "👩‍🌾",
-        "title": "Optimal organic fertilizer ratio for organic tea gardens?",
-        "category": "Soil Health",
-        "content": "Switching to 100% bio-compost and vermicompost for high-altitude plots. What NPK equivalent or neem cake ratio works best for tea flush quality?",
-        "timestamp": "2026-09-14 09:15:00",
-        "likes": 18,
-        "comments": [
-            {"author": "Vikram Singh", "text": "Apply 5 tonnes/ha compost blended with 250kg neem cake to control root nematodes.", "timestamp": "2026-09-14 11:20:00"}
-        ]
-    }
-]
-
-if os.path.exists(COMMUNITY_FILE):
-    try:
-        with open(COMMUNITY_FILE, "r") as f:
-            community_posts = json.load(f)
-    except Exception:
-        pass
-
-def save_community_posts():
-    try:
-        with open(COMMUNITY_FILE, "w") as f:
-            json.dump(community_posts, f, indent=2)
-    except Exception as e:
-        print(f"⚠️ Failed to save community posts: {e}")
 
 def db_save_prediction(record):
     global history_list
@@ -644,15 +598,13 @@ def get_db_status():
     if use_mongodb and db is not None:
         try:
             pred_count = db.predictions.count_documents({})
-            post_count = db.community_posts.count_documents({})
             return jsonify({
                 "status": "connected",
                 "engine": "MongoDB",
                 "database": "plantvision_db",
                 "host": "localhost:27017",
                 "collections": {
-                    "predictions": pred_count,
-                    "community_posts": post_count
+                    "predictions": pred_count
                 }
             })
         except Exception as e:
@@ -660,10 +612,9 @@ def get_db_status():
     return jsonify({
         "status": "connected",
         "engine": "SQLite / JSON File System",
-        "database": "plantvision.db / community_posts.json",
+        "database": "plantvision.db",
         "records": {
-            "predictions": len(history_list),
-            "community_posts": len(community_posts)
+            "predictions": len(history_list)
         }
     })
 
@@ -878,58 +829,6 @@ def get_weather():
         "current": w,
         "forecast": forecast
     })
-
-@app.route("/api/community/posts", methods=["GET", "POST"])
-def handle_community_posts():
-    global community_posts
-    if request.method == "POST":
-        data = request.get_json() or {}
-        new_post = {
-            "id": f"post-{int(time.time())}",
-            "author": data.get("author", "Farmer Member"),
-            "avatar": "🧑‍🌾",
-            "title": data.get("title", "Field Query"),
-            "category": data.get("category", "General"),
-            "content": data.get("content", ""),
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "likes": 0,
-            "comments": []
-        }
-        community_posts.insert(0, new_post)
-        save_community_posts()
-        return jsonify({"status": "ok", "post": new_post})
-        
-    return jsonify(community_posts)
-
-@app.route("/api/community/posts/<post_id>/like", methods=["POST"])
-def like_post(post_id):
-    for post in community_posts:
-        if post["id"] == post_id:
-            post["likes"] += 1
-            save_community_posts()
-            return jsonify({"status": "ok", "likes": post["likes"]})
-    return jsonify({"status": "error", "message": "Post not found"}), 404
-
-@app.route("/api/community/posts/<post_id>/comment", methods=["POST"])
-def comment_post(post_id):
-    data = request.get_json() or {}
-    text = data.get("text", "").strip()
-    author = data.get("author", "Community Member")
-    if not text:
-        return jsonify({"status": "error", "message": "Comment text required"}), 400
-        
-    for post in community_posts:
-        if post["id"] == post_id:
-            comment = {
-                "author": author,
-                "text": text,
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            }
-            post["comments"].append(comment)
-            save_community_posts()
-            return jsonify({"status": "ok", "comment": comment})
-            
-    return jsonify({"status": "error", "message": "Post not found"}), 404
 
 @app.route("/static/<path:filename>")
 def static_files(filename):

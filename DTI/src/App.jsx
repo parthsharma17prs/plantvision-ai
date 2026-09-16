@@ -10,7 +10,6 @@ import Scan from "./layers/ui/pages/Scan";
 import Results from "./layers/ui/pages/Results";
 import Weather from "./layers/ui/pages/Weather";
 import Dashboard from "./layers/ui/pages/Dashboard";
-import Community from "./layers/ui/pages/Community";
 
 function App() {
   return (
@@ -29,7 +28,6 @@ function App() {
             <Route path="/results" element={<Results />} />
             <Route path="/weather" element={<Weather />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/community" element={<Community />} />
           </Routes>
         </PageTransition>
       </AnimatePresence>

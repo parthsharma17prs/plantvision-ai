@@ -19,7 +19,6 @@ function Navbar() {
     { to: "/results", label: t("nav_results") },
     { to: "/dashboard", label: t("nav_dashboard", "Dashboard") },
     { to: "/weather", label: t("nav_weather") },
-    { to: "/community", label: t("nav_community") },
     { to: "/login", label: t("nav_login") },
   ];
 

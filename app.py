@@ -6,7 +6,7 @@ Combines:
 1. Google Drive Ingestion Worker (Drive API v3, gdown, or local feeder watch)
 2. YOLOv8 Plant Disease Diagnostics (bounding boxes, severity %, health %, annotated overlays)
 3. Gemini AI Agriculture Chatbot & Dynamic 4-Section Treatment Advisor
-4. SQLite Persistence (predictions, users, community posts, likes, comments, topics)
+4. SQLite Persistence (predictions, user accounts)
 5. OpenWeather Integration & Agricultural Spraying Advisory
 6. React Vite DTI Frontend + Static Dashboard routing
 """
@@ -175,57 +175,6 @@ def init_db() -> None:
             name TEXT NOT NULL,
             email TEXT NOT NULL UNIQUE,
             password_hash TEXT NOT NULL
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS posts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL,
-            user_id INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            topic TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id)
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS likes (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL,
-            user_id INTEGER NOT NULL,
-            post_id INTEGER NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (post_id) REFERENCES posts (id),
-            UNIQUE(user_id, post_id)
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS comments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL,
-            user_id INTEGER NOT NULL,
-            post_id INTEGER NOT NULL,
-            content TEXT NOT NULL,
-            FOREIGN KEY (user_id) REFERENCES users (id),
-            FOREIGN KEY (post_id) REFERENCES posts (id)
-        )
-        """
-    )
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS follows (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at TEXT NOT NULL,
-            follower_id INTEGER NOT NULL,
-            following_id INTEGER NOT NULL,
-            FOREIGN KEY (follower_id) REFERENCES users (id),
-            FOREIGN KEY (following_id) REFERENCES users (id),
-            UNIQUE(follower_id, following_id)
         )
         """
     )
@@ -788,8 +737,16 @@ def api_recommendation() -> Any:
 @app.get("/weather")
 def api_weather() -> Any:
     city = request.args.get("city", "").strip()
-    if not city:
-        return jsonify({"error": "Query parameter required: city"}), 400
+    lat = request.args.get("lat", "").strip()
+    lon = request.args.get("lon", "").strip()
+
+    if not city and not (lat and lon):
+        if "text/html" in request.headers.get("Accept", ""):
+            if (FRONTEND_DIST / "index.html").exists():
+                return send_from_directory(FRONTEND_DIST, "index.html")
+            if (PLANT_DASHBOARD_STATIC / "index.html").exists():
+                return send_from_directory(PLANT_DASHBOARD_STATIC, "index.html")
+        return jsonify({"error": "Query parameter required: city or lat & lon"}), 400
 
     api_key = os.environ.get("OPENWEATHER_API_KEY", "").strip()
     if not api_key:
@@ -797,8 +754,12 @@ def api_weather() -> Any:
             "error": "Missing OPENWEATHER_API_KEY in .env file. Add your key from https://openweathermap.org/api"
         }), 503
 
-    q = urllib.parse.quote(city)
-    url = f"https://api.openweathermap.org/data/2.5/weather?q={q}&appid={api_key}&units=metric"
+    if lat and lon:
+        url = f"https://api.openweathermap.org/data/2.5/weather?lat={urllib.parse.quote(lat)}&lon={urllib.parse.quote(lon)}&appid={api_key}&units=metric"
+    else:
+        q = urllib.parse.quote(city)
+        url = f"https://api.openweathermap.org/data/2.5/weather?q={q}&appid={api_key}&units=metric"
+
     try:
         with urllib.request.urlopen(url, timeout=20) as resp:
             payload = json.loads(resp.read().decode())
@@ -823,8 +784,11 @@ def api_weather() -> Any:
     if not tips:
         tips.append("Favorable conditions for routine foliar maintenance and protective bio-fungicide sprays.")
 
+    resolved_name = payload.get("name") or (f"Lat: {lat}, Lon: {lon}" if lat and lon else city)
+
     return jsonify({
-        "city": payload.get("name", city),
+        "city": resolved_name,
+        "coord": payload.get("coord", {}),
         "description": str(wx.get("description", "")).title(),
         "temp_c": round(temp, 1),
         "humidity": hum,
@@ -881,185 +845,6 @@ def api_login() -> Any:
         "message": "Login successful",
         "user": {"id": user["id"], "name": user["name"], "email": user["email"]}
     })
-
-# ─── Community Endpoints ───────────────────────────────────────────────────
-@app.get("/api/posts")
-def api_get_posts() -> Any:
-    topic = request.args.get("topic", "").strip()
-    limit = min(int(request.args.get("limit", 50)), 100)
-
-    conn = get_db_connection()
-    query = """
-        SELECT p.id, p.user_id as author_id, p.created_at, p.content, p.topic, u.name as author_name,
-               COUNT(DISTINCT l.id) as likes_count,
-               COUNT(DISTINCT c.id) as comments_count
-        FROM posts p
-        JOIN users u ON p.user_id = u.id
-        LEFT JOIN likes l ON p.id = l.post_id
-        LEFT JOIN comments c ON p.id = c.post_id
-    """
-    params: list[Any] = []
-    if topic:
-        query += " WHERE p.topic = ?"
-        params.append(topic)
-
-    query += " GROUP BY p.id, p.created_at, p.content, p.topic, u.name ORDER BY p.created_at DESC LIMIT ?"
-    params.append(limit)
-
-    rows = conn.execute(query, params).fetchall()
-    conn.close()
-
-    return jsonify([
-        {
-            "id": r["id"],
-            "createdAt": r["created_at"],
-            "content": r["content"],
-            "topic": r["topic"],
-            "author": {"id": r["author_id"], "name": r["author_name"]},
-            "likesCount": r["likes_count"],
-            "commentsCount": r["comments_count"],
-        }
-        for r in rows
-    ])
-
-@app.post("/api/posts")
-def api_create_post() -> Any:
-    body = request.get_json(silent=True) or {}
-    user_id = int(body.get("userId", 0))
-    content = str(body.get("content", "")).strip()
-    topic = str(body.get("topic", "")).strip() or None
-
-    if not user_id or not content:
-        return jsonify({"error": "userId and content are required"}), 400
-    if len(content) > 500:
-        return jsonify({"error": "Post content must be 500 characters or less"}), 400
-
-    conn = get_db_connection()
-    if not conn.execute("SELECT id FROM users WHERE id = ?", (user_id,)).fetchone():
-        conn.close()
-        return jsonify({"error": "User not found"}), 404
-
-    conn.execute(
-        "INSERT INTO posts (created_at, user_id, content, topic) VALUES (?, ?, ?, ?)",
-        (datetime.now(timezone.utc).isoformat(), user_id, content, topic),
-    )
-    post_id = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Post created", "postId": post_id}), 201
-
-@app.delete("/api/posts/<int:post_id>")
-def api_delete_post(post_id: int) -> Any:
-    body = request.get_json(silent=True) or {}
-    user_id = int(body.get("userId", 0))
-
-    conn = get_db_connection()
-    post = conn.execute("SELECT id, user_id FROM posts WHERE id = ?", (post_id,)).fetchone()
-    if not post:
-        conn.close()
-        return jsonify({"error": "Post not found"}), 404
-    if post["user_id"] != user_id:
-        conn.close()
-        return jsonify({"error": "Unauthorized"}), 403
-
-    conn.execute("DELETE FROM likes WHERE post_id = ?", (post_id,))
-    conn.execute("DELETE FROM comments WHERE post_id = ?", (post_id,))
-    conn.execute("DELETE FROM posts WHERE id = ?", (post_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Post deleted"})
-
-@app.post("/api/posts/<int:post_id>/like")
-def api_like_post(post_id: int) -> Any:
-    body = request.get_json(silent=True) or {}
-    user_id = int(body.get("userId", 0))
-    if not user_id:
-        return jsonify({"error": "userId is required"}), 400
-
-    conn = get_db_connection()
-    if not conn.execute("SELECT id FROM posts WHERE id = ?", (post_id,)).fetchone():
-        conn.close()
-        return jsonify({"error": "Post not found"}), 404
-
-    existing = conn.execute("SELECT id FROM likes WHERE user_id = ? AND post_id = ?", (user_id, post_id)).fetchone()
-    if existing:
-        conn.execute("DELETE FROM likes WHERE id = ?", (existing["id"],))
-        conn.commit()
-        conn.close()
-        return jsonify({"message": "Post unliked"})
-
-    conn.execute(
-        "INSERT INTO likes (created_at, user_id, post_id) VALUES (?, ?, ?)",
-        (datetime.now(timezone.utc).isoformat(), user_id, post_id),
-    )
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Post liked"})
-
-@app.get("/api/posts/<int:post_id>/comments")
-def api_get_comments(post_id: int) -> Any:
-    conn = get_db_connection()
-    if not conn.execute("SELECT id FROM posts WHERE id = ?", (post_id,)).fetchone():
-        conn.close()
-        return jsonify({"error": "Post not found"}), 404
-
-    rows = conn.execute(
-        """
-        SELECT c.id, c.created_at, c.content, u.name as author_name
-        FROM comments c
-        JOIN users u ON c.user_id = u.id
-        WHERE c.post_id = ?
-        ORDER BY c.created_at ASC
-        """,
-        (post_id,)
-    ).fetchall()
-    conn.close()
-
-    return jsonify([
-        {"id": r["id"], "createdAt": r["created_at"], "content": r["content"], "author": {"name": r["author_name"]}}
-        for r in rows
-    ])
-
-@app.post("/api/posts/<int:post_id>/comments")
-def api_create_comment(post_id: int) -> Any:
-    body = request.get_json(silent=True) or {}
-    user_id = int(body.get("userId", 0))
-    content = str(body.get("content", "")).strip()
-
-    if not user_id or not content:
-        return jsonify({"error": "userId and content are required"}), 400
-
-    conn = get_db_connection()
-    if not conn.execute("SELECT id FROM posts WHERE id = ?", (post_id,)).fetchone():
-        conn.close()
-        return jsonify({"error": "Post not found"}), 404
-
-    conn.execute(
-        "INSERT INTO comments (created_at, user_id, post_id, content) VALUES (?, ?, ?, ?)",
-        (datetime.now(timezone.utc).isoformat(), user_id, post_id, content),
-    )
-    cid = conn.execute("SELECT last_insert_rowid()").fetchone()[0]
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Comment added", "commentId": cid}), 201
-
-@app.get("/api/topics")
-def api_get_topics() -> Any:
-    conn = get_db_connection()
-    rows = conn.execute(
-        """
-        SELECT topic, COUNT(*) as post_count
-        FROM posts
-        WHERE topic IS NOT NULL AND topic != ''
-        GROUP BY topic
-        ORDER BY post_count DESC
-        LIMIT 20
-        """
-    ).fetchall()
-    conn.close()
-    return jsonify([{"name": r["topic"], "postCount": r["post_count"]} for r in rows])
 
 # ─── Static Assets & Frontend Catch-All ─────────────────────────────────────
 @app.get("/")

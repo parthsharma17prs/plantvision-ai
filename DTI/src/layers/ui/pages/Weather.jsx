@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import Card from "../components/Card";
 import Button from "../components/Button";
-import { fetchLiveWeather } from "../../services/api/weatherApi";
+import { fetchLiveWeather, fetchWeatherByCoords } from "../../services/api/weatherApi";
 
 function Weather() {
   const { t } = useTranslation();
@@ -10,10 +10,11 @@ function Weather() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [locating, setLocating] = useState(false);
 
   const loadWeather = async () => {
     if (!city.trim()) {
-      setError(t("weather_city_required"));
+      setError(t("weather_city_required", "Please enter a city name."));
       return;
     }
     setError("");
@@ -27,6 +28,51 @@ function Weather() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getLiveLocation = () => {
+    if (!navigator.geolocation) {
+      setError(t("weather_geo_unsupported", "Geolocation is not supported by your browser."));
+      return;
+    }
+
+    setError("");
+    setLocating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          const w = await fetchWeatherByCoords(lat, lon);
+          setData(w);
+          if (w.city) {
+            setCity(w.city);
+          }
+        } catch (e) {
+          setError(e?.message || t("weather_error"));
+        } finally {
+          setLocating(false);
+        }
+      },
+      (geoErr) => {
+        setLocating(false);
+        switch (geoErr.code) {
+          case geoErr.PERMISSION_DENIED:
+            setError(t("weather_geo_denied", "Location permission denied. Please allow location access or enter your city manually."));
+            break;
+          case geoErr.POSITION_UNAVAILABLE:
+            setError(t("weather_geo_unavailable", "Location information is unavailable. Please enter your city manually."));
+            break;
+          case geoErr.TIMEOUT:
+            setError(t("weather_geo_timeout", "Location request timed out. Please try again or enter your city."));
+            break;
+          default:
+            setError(geoErr.message || t("weather_geo_unavailable", "Unable to retrieve your location."));
+        }
+      },
+      { timeout: 12000, enableHighAccuracy: true, maximumAge: 60000 }
+    );
   };
 
   const tempLabel = data ? `${data.temp_c}°C` : "—";
@@ -49,15 +95,50 @@ function Weather() {
             className="input-shell mt-1 w-full pt-3"
           />
         </div>
-        <Button onClick={() => void loadWeather()} disabled={loading}>
-          {loading ? t("weather_loading") : t("weather_fetch")}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => void loadWeather()} disabled={loading || locating}>
+            {loading ? t("weather_loading") : t("weather_fetch")}
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={getLiveLocation}
+            disabled={loading || locating}
+            className="flex items-center gap-2"
+          >
+            {locating ? (
+              <>
+                <svg className="h-4 w-4 animate-spin text-leafSecondary" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+                {t("weather_locating", "Detecting…")}
+              </>
+            ) : (
+              <>
+                <span>📍</span>
+                {t("weather_live_location", "Get Live Location")}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
+
       {error && <p className="text-sm text-rose-400">{error}</p>}
+
       {data && (
-        <p className="text-sm text-slate-300">
-          {t("weather_showing_for")}: <strong>{data.city}</strong>
-        </p>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-slate-300">
+          <p>
+            {t("weather_showing_for")}: <strong className="text-leafSecondary">{data.city}</strong>
+            {data.coord?.lat && data.coord?.lon && (
+              <span className="ml-2 font-mono text-xs text-slate-400">
+                ({data.coord.lat.toFixed(4)}°N, {data.coord.lon.toFixed(4)}°E)
+              </span>
+            )}
+          </p>
+          <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs text-emerald-400">
+            ● Live GPS Sync
+          </span>
+        </div>
       )}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
