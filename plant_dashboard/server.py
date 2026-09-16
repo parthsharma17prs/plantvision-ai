@@ -667,10 +667,36 @@ def get_db_status():
         }
     })
 
+def get_realtime_stats():
+    history = db_get_history()
+    total = len(history)
+    healthy = 0
+    diseased = 0
+    conf_sum = 0.0
+    
+    for item in history:
+        lbl = (item.get("top_label") or "").lower()
+        conf = float(item.get("top_confidence") or 0)
+        conf_sum += conf
+        if "healthy" in lbl:
+            healthy += 1
+        else:
+            diseased += 1
+            
+    avg_conf = round(conf_sum / total, 1) if total > 0 else 0.0
+    return {
+        "total_analyzed": total,
+        "healthy_count": healthy,
+        "diseased_count": diseased,
+        "avg_confidence": avg_conf
+    }
+
 @app.route("/api/latest-result")
 def latest_result():
     with state_lock:
-        return jsonify(dict(state))
+        res = dict(state)
+        res["stats"] = get_realtime_stats()
+        return jsonify(res)
 
 @app.route("/api/history")
 def get_history():
@@ -913,21 +939,53 @@ def static_files(filename):
 def get_drive_service():
     creds = None
     import pickle
-    pickle_path = os.path.join(SCRIPT_DIR, "..", "Agribot", "token.pickle")
+    agribot_dir = os.path.join(SCRIPT_DIR, "..", "Agribot")
+    pickle_path = os.path.join(agribot_dir, "token.pickle")
+    creds_path = os.path.join(agribot_dir, "credentials.json")
+
     if os.path.exists(pickle_path):
-        with open(pickle_path, "rb") as token:
-            creds = pickle.load(token)
+        try:
+            with open(pickle_path, "rb") as token:
+                creds = pickle.load(token)
+        except Exception as e:
+            print(f"⚠️ Failed loading token.pickle: {e}")
             
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
+        elif os.path.exists(creds_path):
+            from google_auth_oauthlib.flow import InstalledAppFlow
+            flow = InstalledAppFlow.from_client_secrets_file(creds_path, SCOPES)
+            creds = flow.run_local_server(port=0)
+            with open(pickle_path, "wb") as token:
+                pickle.dump(creds, token)
         else:
-            raise RuntimeError("token.pickle missing. Authenticate via Agribot/capture.py first.")
+            raise RuntimeError(f"Credentials file missing at {creds_path}")
+            
     return build("drive", "v3", credentials=creds)
 
-def get_latest_image_from_drive(service):
+def resolve_agribot_drive_folder_id(service):
+    try:
+        query = "name = 'Agribotimage' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+        res = service.files().list(q=query, spaces="drive", fields="files(id, name)").execute()
+        folders = res.get("files", [])
+        if folders:
+            fid = folders[0]["id"]
+            print(f"✅ Found Agribot Drive folder 'Agribotimage' (ID: {fid}) via Agribot/credentials.json", flush=True)
+            return fid
+            
+        meta = {"name": "Agribotimage", "mimeType": "application/vnd.google-apps.folder"}
+        f = service.files().create(body=meta, fields="id").execute()
+        fid = f["id"]
+        print(f"✅ Created Agribot Drive folder 'Agribotimage' (ID: {fid}) via Agribot/credentials.json", flush=True)
+        return fid
+    except Exception as e:
+        print(f"⚠️ Drive folder lookup notice: {e}. Using fallback folder ID {PARENT_FOLDER_ID}", flush=True)
+        return PARENT_FOLDER_ID
+
+def get_latest_image_from_drive(service, folder_id):
     query = (
-        f"'{PARENT_FOLDER_ID}' in parents and trashed=false and "
+        f"'{folder_id}' in parents and trashed=false and "
         f"(mimeType='image/png' or mimeType='image/jpeg')"
     )
     res = service.files().list(
@@ -950,16 +1008,18 @@ def download_image(service, file_id):
 def polling_worker():
     init_ai_model()
     service = None
+    active_folder_id = PARENT_FOLDER_ID
     while True:
         try:
             if service is None:
                 service = get_drive_service()
-                print("✅ Drive connected.", flush=True)
+                active_folder_id = resolve_agribot_drive_folder_id(service)
+                print(f"✅ Drive connected using Agribot/credentials.json (Folder: {active_folder_id}).", flush=True)
                 with state_lock:
                     state["status"] = "waiting"
                     state["error"] = None
 
-            latest = get_latest_image_from_drive(service)
+            latest = get_latest_image_from_drive(service, active_folder_id)
             if latest is None:
                 with state_lock:
                     state["status"] = "waiting"
