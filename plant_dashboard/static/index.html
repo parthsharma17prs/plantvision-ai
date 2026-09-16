@@ -1,0 +1,1982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🌿 PlantVision AI — Multilingual Smart Farming & Disease Diagnostics Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #060d0a; --bg2: #0c1712; --bg3: #111f18;
+      --surface: #182920; --surface2: #1f3529;
+      --border: #253d2e; --border2: #2f5039;
+      --green: #22c55e; --green2: #16a34a; --green-dim: #14532d;
+      --emerald: #10b981; --teal: #14b8a6;
+      --yellow: #eab308; --red: #ef4444; --orange: #f97316; --blue: #3b82f6; --purple: #a855f7;
+      --text: #e2f5ea; --text2: #a3c4ae; --text3: #5d8a6c;
+      --accent: #34d399;
+      --card-shadow: 0 12px 32px rgba(0,0,0,0.55);
+    }
+    html, body { height: 100vh; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; overflow: hidden; }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: linear-gradient(rgba(34,197,94,0.025) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(34,197,94,0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* Layout */
+    body { display: flex; }
+    .sidebar { width: 260px; background: rgba(6,13,10,0.97); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 20px 0; z-index: 200; flex-shrink: 0; }
+    .sidebar-logo { padding: 0 24px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 26px; animation: sway 4s ease-in-out infinite; }
+    @keyframes sway { 0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)} }
+    .logo h1 { font-size: 17px; font-weight: 800; background: linear-gradient(135deg,#34d399,#14b8a6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .logo p { font-size: 10px; color: var(--text3); font-weight: 600; letter-spacing: 0.8px; text-transform: uppercase; }
+
+    .nav-group { padding: 0 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item { padding: 11px 16px; color: var(--text2); text-decoration: none; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: .2s; border-radius: 10px; cursor: pointer; }
+    .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+    .nav-item.active { color: var(--accent); background: rgba(52,211,153,0.1); font-weight: 600; border: 1px solid rgba(52,211,153,0.2); }
+
+    .main-wrapper { flex: 1; display: flex; flex-direction: column; height: 100vh; overflow-y: auto; overflow-x: hidden; position: relative; }
+    .view { display: none; padding-bottom: 40px; }
+    .view.active { display: block; animation: fadeIn 0.3s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Header */
+    header {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 32px;
+      background: rgba(6,13,10,0.94); backdrop-filter: blur(24px);
+      border-bottom: 1px solid var(--border);
+    }
+    .header-stats { display: flex; gap: 24px; align-items: center; }
+    .hstat { text-align: center; }
+    .hstat-val { font-family: 'JetBrains Mono', monospace; font-size: 18px; font-weight: 700; color: var(--accent); }
+    .hstat-label { font-size: 9px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text3); }
+    .hsep { width: 1px; height: 32px; background: var(--border); }
+    .header-right { display: flex; align-items: center; gap: 12px; }
+    .live-badge { display: flex; align-items: center; gap: 6px; background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; color: var(--green); }
+    .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 1.8s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.8)} }
+
+    /* Persistent Top-Right Language Button */
+    .lang-dropdown-btn {
+      background: linear-gradient(135deg, var(--surface2), var(--bg3));
+      color: var(--text); border: 1px solid rgba(52,211,153,0.4);
+      padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 12px;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4); transition: .2s;
+    }
+    .lang-dropdown-btn:hover { border-color: var(--accent); background: var(--surface); }
+    .lang-menu {
+      display: none; position: absolute; top: 46px; right: 0;
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 14px; width: 230px; box-shadow: 0 16px 40px rgba(0,0,0,0.85);
+      z-index: 999; overflow: hidden; backdrop-filter: blur(12px);
+    }
+    .lang-menu.active { display: block; animation: fadeIn .2s ease; }
+    .lang-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px; font-size: 13px; color: var(--text);
+      text-decoration: none; cursor: pointer; border-bottom: 1px solid var(--border);
+      transition: .2s;
+    }
+    .lang-item:hover { background: rgba(52,211,153,0.1); color: var(--accent); }
+    .lang-item.selected { font-weight: 700; color: var(--accent); background: rgba(52,211,153,0.06); }
+
+    /* Main Grid */
+    main { position: relative; z-index: 1; max-width: 1600px; margin: 0 auto; padding: 24px 32px; display: grid; grid-template-columns: 1fr 1fr 380px; grid-template-rows: auto auto auto; gap: 20px; }
+
+    /* Cards */
+    .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 18px; box-shadow: var(--card-shadow); overflow: hidden; transition: border-color .2s; }
+    .card:hover { border-color: var(--border2); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    .card-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .card-badge { font-size: 10px; color: var(--text3); background: var(--surface); padding: 3px 9px; border-radius: 100px; }
+    .card-body { padding: 16px; }
+
+    /* Image Panel */
+    .image-panel { grid-column: 1; grid-row: 1 / 3; }
+    .image-display { position: relative; display: flex; align-items: center; justify-content: center; min-height: 320px; background: var(--bg3); }
+    .image-display img { max-width: 100%; max-height: 360px; object-fit: contain; display: block; transition: opacity 0.4s; }
+    .no-img { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 50px 20px; color: var(--text3); }
+    .no-img .icon { font-size: 44px; opacity: 0.4; }
+    .no-img p { font-size: 13px; font-weight: 500; }
+    .image-footer { display: flex; align-items: center; justify-content: space-between; padding: 10px 18px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.2); }
+    .fname { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(52,211,153,0.07); padding: 3px 9px; border-radius: 6px; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Top Result */
+    .result-panel { grid-column: 1; grid-row: 3; }
+    .result-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+    .result-label { font-size: 18px; font-weight: 700; color: var(--text); }
+    .disease-badge { margin-top: 10px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .disease-badge.healthy { background: rgba(34,197,94,.1); border: 1px solid rgba(34,197,94,.25); color: var(--green); }
+    .disease-badge.diseased { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25); color: var(--red); }
+
+    .ring { position: relative; width: 76px; height: 76px; flex-shrink: 0; }
+    .ring svg { transform: rotate(-90deg); }
+    .ring-track { fill: none; stroke: var(--surface); stroke-width: 8; }
+    .ring-fill { fill: none; stroke: var(--accent); stroke-width: 8; stroke-linecap: round; stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1s ease; }
+    .ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; }
+    .ring-pct { font-size: 15px; font-weight: 700; color: var(--accent); }
+
+    /* Timeline & Object lists */
+    .timeline-panel { grid-column: 2; grid-row: 1; }
+    .chart-wrap { padding: 12px 16px 16px; height: 180px; }
+    .preds-panel { grid-column: 2; grid-row: 2 / 4; }
+    .preds-list { max-height: 440px; overflow-y: auto; padding: 10px 14px; display: flex; flex-direction: column; gap: 6px; }
+    .pred-row { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: var(--bg3); }
+    .pred-row.top { background: rgba(52,211,153,.07); border: 1px solid rgba(52,211,153,.2); }
+    .pred-name { flex: 1; font-size: 12px; font-weight: 500; }
+    .pred-bar-bg { width: 70px; height: 4px; background: var(--surface); border-radius: 2px; overflow: hidden; }
+    .pred-bar { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--green-dim), var(--accent)); }
+    .pred-pct { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+
+    /* Right Panel */
+    .history-panel { grid-column: 3; grid-row: 1 / 3; }
+    .hist-list { max-height: 420px; overflow-y: auto; }
+    .hist-item { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    .hist-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .hist-dot.healthy { background: var(--green); }
+    .hist-dot.diseased { background: var(--red); }
+
+    .stats-panel { grid-column: 3; grid-row: 3; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; }
+    .scard { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .scard-val { font-size: 20px; font-weight: 800; color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+    /* Leaf Scan View */
+    .scan-container { max-width: 1200px; margin: 0 auto; padding: 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .dropzone { border: 2px dashed var(--border2); border-radius: 18px; background: var(--bg2); padding: 40px 24px; text-align: center; cursor: pointer; transition: .2s; }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--accent); background: rgba(52,211,153,0.03); }
+    .dropzone-icon { font-size: 48px; margin-bottom: 12px; }
+    .btn-action { background: var(--green2); color: #fff; border: none; padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: .2s; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+    .btn-action:hover { background: var(--green); }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); padding: 10px 20px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: .2s; font-size: 13px; }
+    .btn-secondary:hover { background: var(--surface); }
+
+    .diagnosis-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 18px; padding: 24px; }
+    .metric-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .metric-pill.high { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+    .metric-pill.moderate { background: rgba(234,179,8,0.15); border: 1px solid rgba(234,179,8,0.3); color: var(--yellow); }
+    .metric-pill.low { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: var(--green); }
+
+    /* Weather Page */
+    .weather-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-top: 20px; }
+    .weather-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+    .weather-val { font-size: 32px; font-family: 'JetBrains Mono', monospace; font-weight: 800; color: var(--accent); margin: 6px 0; }
+
+    /* Chatbot View */
+    .chat-container { max-width: 900px; margin: 0 auto; height: calc(100vh - 120px); display: flex; flex-direction: column; background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; overflow: hidden; }
+    .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+    .msg { max-width: 80%; padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.5; }
+    .msg.bot { background: var(--surface); color: var(--text); align-self: flex-start; border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+    .msg.user { background: var(--green2); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+    .chat-input-row { padding: 16px; border-top: 1px solid var(--border); background: var(--bg3); display: flex; gap: 12px; align-items: center; }
+    .chat-input { flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 18px; color: var(--text); font-size: 14px; outline: none; }
+    .chat-input:focus { border-color: var(--accent); }
+
+    .mic-btn { background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4); color: var(--accent); padding: 12px; border-radius: 12px; cursor: pointer; transition: .2s; }
+    .mic-btn:hover { background: rgba(52,211,153,0.3); }
+    .mic-btn.recording { background: var(--red); color: #fff; animation: pulse 1s infinite; }
+
+    /* Community View */
+    .community-layout { max-width: 1100px; margin: 0 auto; padding: 32px; }
+    .post-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 16px; }
+    .post-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .post-author { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+    .post-cat { font-size: 11px; background: rgba(52,211,153,0.1); color: var(--accent); border: 1px solid rgba(52,211,153,0.3); padding: 3px 10px; border-radius: 100px; }
+
+    /* History Table */
+    .table-container { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    th { background: var(--bg3); padding: 14px 18px; color: var(--text3); font-weight: 600; font-size: 11px; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+    td { padding: 14px 18px; border-bottom: 1px solid var(--border); }
+    tr:hover { background: rgba(255,255,255,0.02); }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(6px); z-index: 999; align-items: center; justify-content: center; padding: 40px; }
+    .modal-overlay.active { display: flex; }
+    .modal-content { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; max-width: 900px; width: 100%; padding: 24px; position: relative; }
+  </style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo">
+      <span class="logo-icon">🌿</span>
+      <div>
+        <h1>PlantVision AI</h1>
+        <p id="subLogo" data-i18n="sub_logo">Smart Agribot Platform</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="nav-group">
+    <a class="nav-item active" onclick="switchTab('disease-view', this)">
+      <span>📊</span> <span data-i18n="nav_dashboard">Disease Dashboard</span>
+    </a>
+    <a class="nav-item" onclick="switchTab('scan-view', this)">
+      <span>🌿</span> <span data-i18n="nav_scan">Leaf Scan & Upload</span>
+    </a>
+    <a class="nav-item" onclick="switchTab('history-view', this)">
+      <span>📜</span> <span data-i18n="nav_history">Prediction History</span>
+    </a>
+    <a class="nav-item" onclick="switchTab('weather-view', this)">
+      <span>🌦️</span> <span data-i18n="nav_weather">Weather & Spray</span>
+    </a>
+    <a class="nav-item" onclick="switchTab('chat-view', this)">
+      <span>🤖</span> <span data-i18n="nav_chat">AgriBot Chatbot</span>
+    </a>
+    <a class="nav-item" onclick="switchTab('community-view', this)">
+      <span>👨‍🌾</span> <span data-i18n="nav_community">Farmer Community</span>
+    </a>
+  </div>
+</aside>
+
+<div class="main-wrapper">
+  <header>
+    <div style="flex:1"></div>
+    <div class="header-stats">
+      <div class="hstat"><div class="hstat-val" id="hTotal">0</div><div class="hstat-label" data-i18n="stat_analyzed">Analyzed</div></div>
+      <div class="hsep"></div>
+      <div class="hstat"><div class="hstat-val" id="hHealthy">0</div><div class="hstat-label" data-i18n="stat_healthy">Healthy</div></div>
+      <div class="hsep"></div>
+      <div class="hstat"><div class="hstat-val" id="hDiseased">0</div><div class="hstat-label" data-i18n="stat_diseased">Diseased</div></div>
+      <div class="hsep"></div>
+      <div class="hstat"><div class="hstat-val" id="hAvgConf">—</div><div class="hstat-label" data-i18n="stat_avgconf">Avg Conf</div></div>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div><span data-i18n="live_engine">LIVE ENGINE</span></div>
+      <div id="dbStatusBadge" style="font-size:10px; padding:5px 12px; border-radius:100px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); color:var(--emerald); font-weight:700;">🍃 DB: MongoDB (plantvision_db)</div>
+      
+      <!-- Top Right Persistent Language Switcher -->
+      <div style="position:relative; margin-left:12px;">
+        <button class="lang-dropdown-btn" onclick="toggleLangDropdown()">
+          <span>🌐</span> <span id="currentLangLabel">English 🇬🇧</span> ▾
+        </button>
+        <div class="lang-menu" id="langMenu">
+          <div style="padding:8px 12px; font-size:10px; text-transform:uppercase; color:var(--text3); font-weight:700; border-bottom:1px solid var(--border);" data-i18n="select_lang_header">Select Regional Language</div>
+          <a class="lang-item" id="item-en" onclick="setLanguage('en', 'English 🇬🇧')">English 🇬🇧</a>
+          <a class="lang-item" id="item-bn" onclick="setLanguage('bn', 'বাংলা (Bengali) 🌾')">বাংলা (Bengali) 🌾</a>
+          <a class="lang-item" id="item-hi" onclick="setLanguage('hi', 'हिंदी (Hindi) 🇮🇳')">हिंदी (Hindi) 🇮🇳</a>
+          <a class="lang-item" id="item-gu" onclick="setLanguage('gu', 'ગુજરાતી (Gujarati) 🌾')">ગુજરાતી (Gujarati) 🌾</a>
+          <a class="lang-item" id="item-mwr" onclick="setLanguage('mwr', 'मालवी (Malvi) 🌾')">मालवी (Malvi) 🌾</a>
+          <a class="lang-item" id="item-hne" onclick="setLanguage('hne', 'छत्तीसगढ़ी (Chhattisgarhi) 🌾')">छत्तीसगढ़ी (Chhattisgarhi) 🌾</a>
+          <a class="lang-item" id="item-mr" onclick="setLanguage('mr', 'मराठी (Marathi) 🌾')">मराठी (Marathi) 🌾</a>
+          <a class="lang-item" id="item-ta" onclick="setLanguage('ta', 'தமிழ் (Tamil) 🌾')">தமிழ் (Tamil) 🌾</a>
+          <a class="lang-item" id="item-te" onclick="setLanguage('te', 'తెలుగు (Telugu) 🌾')">తెలుగు (Telugu) 🌾</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- VIEW 1: Disease Dashboard -->
+  <div id="disease-view" class="view active">
+    <main>
+      <div class="card image-panel">
+        <div class="card-header">
+          <div class="card-title">📸 <span data-i18n="live_feed_title">Live Agribot Feed</span> <span class="card-badge" data-i18n="drive_sync">Google Drive Sync</span></div>
+          <div class="fname" id="filename" data-i18n="waiting_filename">Waiting...</div>
+        </div>
+        <div class="image-display">
+          <div class="no-img" id="noImg">
+            <div class="icon">🔭</div>
+            <p data-i18n="awaiting_img">Awaiting Agribot images via Google Drive</p>
+          </div>
+          <img id="plantImg" src="" alt="Plant leaf" style="display:none" />
+        </div>
+        <div class="image-footer">
+          <span class="img-ts" id="imgTs" style="font-size:11px; color:var(--text3); font-family:monospace;">—</span>
+          <span style="font-size:10px; color:var(--text3);" data-i18n="ai_engine_tag">ONNX / YOLOv8 AI Engine</span>
+        </div>
+      </div>
+
+      <div class="card timeline-panel">
+        <div class="card-header">
+          <div class="card-title"><span data-i18n="confidence_timeline">📈 Confidence Timeline</span></div>
+          <div class="card-badge" id="tlCount">6 <span data-i18n="samples_unit">samples</span></div>
+        </div>
+        <div class="chart-wrap"><canvas id="timelineChart"></canvas></div>
+      </div>
+
+      <div class="card preds-panel">
+        <div class="card-header">
+          <div class="card-title"><span data-i18n="sickness_classes">🦠 Sickness Class Probabilities</span></div>
+          <div class="card-badge" data-i18n="categories_count">8 Categories</div>
+        </div>
+        <div class="preds-list" id="predsList">
+          <div style="padding:30px;text-align:center;color:var(--text3);font-size:12px" data-i18n="awaiting_inference">Awaiting AI inference...</div>
+        </div>
+      </div>
+
+      <div class="card history-panel">
+        <div class="card-header">
+          <div class="card-title"><span data-i18n="live_stream">📋 Live Results Stream</span></div>
+        </div>
+        <div class="hist-list" id="histList">
+          <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px" data-i18n="no_results_yet">No results yet</div>
+        </div>
+      </div>
+
+      <div class="card result-panel">
+        <div class="card-header"><div class="card-title"><span data-i18n="top_diagnosis">🎯 Top AI Diagnosis</span></div></div>
+        <div class="card-body">
+          <div class="result-inner">
+            <div>
+              <div style="font-size:10px; text-transform:uppercase; color:var(--text3); margin-bottom:4px;" data-i18n="primary_class">Primary Classification</div>
+              <div class="result-label" id="topLabel" data-i18n="awaiting">Awaiting...</div>
+              <div class="disease-badge healthy" id="diseaseBadge"><span>🔍</span><span data-i18n="awaiting_scan">Awaiting scan</span></div>
+            </div>
+            <div class="ring">
+              <svg viewBox="0 0 76 76" width="76" height="76">
+                <circle class="ring-track" cx="38" cy="38" r="33"/>
+                <circle class="ring-fill" id="ringFill" cx="38" cy="38" r="33"/>
+              </svg>
+              <div class="ring-text"><div class="ring-pct" id="ringPct">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card stats-panel">
+        <div class="stats-grid">
+          <div class="scard"><div style="font-size:9px; color:var(--text3); text-transform:uppercase;" data-i18n="stat_analyzed">Analyzed</div><div class="scard-val" id="sTotal">0</div></div>
+          <div class="scard"><div style="font-size:9px; color:var(--text3); text-transform:uppercase;" data-i18n="stat_avgconf">Avg Conf</div><div class="scard-val" id="sAvg">—</div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- VIEW 2: Leaf Scan & Upload -->
+  <div id="scan-view" class="view">
+    <div class="scan-container">
+      <div>
+        <h2 style="font-size:24px; font-weight:700; margin-bottom:8px;" data-i18n="scan_header">🌿 Leaf Scan & Upload</h2>
+        <p style="color:var(--text3); font-size:14px; margin-bottom:24px;" data-i18n="scan_sub">Upload a leaf photo or capture directly from camera for instant AI diagnosis in your regional language.</p>
+
+        <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+          <div class="dropzone-icon">📷</div>
+          <h3 style="font-size:16px; font-weight:600; margin-bottom:6px;" data-i18n="drag_drop">Drag & Drop Leaf Photo</h3>
+          <p style="color:var(--text3); font-size:12px; margin-bottom:16px;">JPG, PNG, WEBP</p>
+          <button class="btn-action" type="button" data-i18n="browse_files">Browse Files</button>
+          <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFileSelect(event)" />
+        </div>
+
+        <div style="display:flex; gap:12px; margin-top:16px;">
+          <button class="btn-secondary" style="flex:1" onclick="openWebcamModal()" data-i18n="webcam_btn">🎥 Open Webcam Camera</button>
+        </div>
+
+        <div style="margin-top:24px; background:var(--bg2); border:1px solid var(--border); border-radius:16px; padding:16px;">
+          <div style="font-size:12px; font-weight:600; color:var(--text3); margin-bottom:12px;" data-i18n="quick_samples">Quick Test Samples:</div>
+          <div style="display:flex; flex-wrap:wrap; gap:8px;">
+            <button class="btn-secondary" style="padding:6px 12px; font-size:11px;" onclick="loadSampleImage('Bird Eye Spot')" data-i18n="sample_1">🍃 Sample 1: Bird Eye</button>
+            <button class="btn-secondary" style="padding:6px 12px; font-size:11px;" onclick="loadSampleImage('Algal Leaf')" data-i18n="sample_2">🍃 Sample 2: Algal Leaf</button>
+            <button class="btn-secondary" style="padding:6px 12px; font-size:11px;" onclick="loadSampleImage('Healthy')" data-i18n="sample_3">🍃 Sample 3: Healthy</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="diagnosis-card" id="scanResultCard">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+            <h3 style="font-size:18px; font-weight:700;" data-i18n="ai_diag_result">AI Diagnostic Result</h3>
+            <span class="metric-pill low" id="scanSeverityPill" data-i18n="severity_low">Low Severity</span>
+          </div>
+
+          <div style="display:flex; gap:20px; align-items:center; margin-bottom:20px; background:var(--bg3); padding:16px; border-radius:14px; border:1px solid var(--border);">
+            <img id="scanPreviewImg" src="" alt="Preview" style="width:90px; height:90px; object-fit:cover; border-radius:10px; display:none;" />
+            <div style="flex:1">
+              <div id="scanDiseaseName" style="font-size:22px; font-weight:800; color:var(--text);" data-i18n="awaiting_scan">Awaiting Scan</div>
+              <div id="scanConfidence" style="font-family:'JetBrains Mono',monospace; color:var(--accent); font-size:14px; margin-top:2px;" data-i18n="select_leaf_prompt">Select or upload an image to begin</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:9px; color:var(--text3); text-transform:uppercase;" data-i18n="health_score_label">Health Score</div>
+              <div id="scanHealthScore" style="font-size:28px; font-weight:800; font-family:'JetBrains Mono',monospace; color:var(--green);">—</div>
+            </div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div style="background:var(--bg3); padding:14px; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:4px;" data-i18n="curative_title">💊 Curative Treatment Recommendation</div>
+              <div id="scanTreatmentText" style="font-size:13px; color:var(--text2); line-height:1.4;" data-i18n="select_leaf_prompt">Select a leaf image to generate specific pesticide recommendations.</div>
+            </div>
+
+            <div style="background:var(--bg3); padding:14px; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:11px; font-weight:700; color:var(--teal); text-transform:uppercase; margin-bottom:4px;" data-i18n="organic_title">🌿 Organic / Biological Option</div>
+              <div id="scanOrganicText" style="font-size:13px; color:var(--text2); line-height:1.4;" data-i18n="eco_treatments_prompt">Eco-friendly treatments will display here.</div>
+            </div>
+
+            <div style="background:var(--bg3); padding:14px; border-radius:12px; border:1px solid var(--border);">
+              <div style="font-size:11px; font-weight:700; color:var(--yellow); text-transform:uppercase; margin-bottom:4px;" data-i18n="preventive_title">🛡️ Preventive Cultural Practice</div>
+              <div id="scanPreventionText" style="font-size:13px; color:var(--text2); line-height:1.4;" data-i18n="field_advice_prompt">Field management advice will display here.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 3: Prediction History -->
+  <div id="history-view" class="view">
+    <div style="max-width:1200px; margin:0 auto; padding:32px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <h2 style="font-size:24px; font-weight:700;" data-i18n="history_header">📜 Prediction History Log</h2>
+          <p style="color:var(--text3); font-size:14px;" data-i18n="history_sub">Complete record of AI diagnostic scans with CSV export capability.</p>
+        </div>
+        <a href="/api/history/export" class="btn-action" style="text-decoration:none;" data-i18n="export_csv">📥 Export CSV Report</a>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th data-i18n="th_timestamp">Timestamp</th>
+              <th data-i18n="th_filename">Filename</th>
+              <th data-i18n="th_diagnosis">Diagnosis</th>
+              <th data-i18n="th_confidence">Confidence</th>
+              <th data-i18n="th_severity">Severity</th>
+              <th data-i18n="th_health_score">Health Score</th>
+              <th data-i18n="th_action">Action</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text3);" data-i18n="no_history_logs">Loading prediction history...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 4: Weather & Spray -->
+  <div id="weather-view" class="view">
+    <div style="max-width:1200px; margin:0 auto; padding:32px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <h2 style="font-size:24px; font-weight:700;" data-i18n="weather_header">🌦️ Regional Weather & Spraying Adviser</h2>
+          <p style="color:var(--text3); font-size:14px;" data-i18n="weather_sub">Real-time weather parameters and agricultural spray safety guidelines.</p>
+        </div>
+        <select id="weatherLocSelect" onchange="fetchWeather()" style="background:var(--bg2); color:var(--text); border:1px solid var(--border); padding:10px 16px; border-radius:10px; font-weight:600;">
+          <option value="Assam">Assam Tea Region</option>
+          <option value="Darjeeling">Darjeeling Hills</option>
+          <option value="Munnar">Munnar High Range</option>
+          <option value="Nilgiris">Nilgiris District</option>
+          <option value="Kolkata">Kolkata Plain</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding:24px; margin-bottom:24px; background:linear-gradient(135deg, var(--bg2), var(--bg3));">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-size:12px; color:var(--text3); text-transform:uppercase; font-weight:600;" data-i18n="spray_safety">Spraying Safety Status</div>
+            <div id="sprayAdvisoryText" style="font-size:26px; font-weight:800; color:var(--green); margin-top:4px;" data-i18n="optimal_spray">Optimal for Spraying</div>
+          </div>
+          <div class="live-badge" style="font-size:13px; padding:8px 16px;" data-i18n="safe_conditions">SAFE CONDITIONS</div>
+        </div>
+      </div>
+
+      <div class="weather-grid">
+        <div class="weather-card">
+          <div style="font-size:11px; color:var(--text3); text-transform:uppercase; font-weight:600;" data-i18n="temp_label">Temperature</div>
+          <div class="weather-val" id="wTemp">28.5°C</div>
+          <div style="font-size:12px; color:var(--text2);" data-i18n="ambient_temp">Ambient Field Temp</div>
+        </div>
+        <div class="weather-card">
+          <div style="font-size:11px; color:var(--text3); text-transform:uppercase; font-weight:600;" data-i18n="humidity_label">Relative Humidity</div>
+          <div class="weather-val" id="wHumidity">78%</div>
+          <div style="font-size:12px; color:var(--text2);" data-i18n="foliage_moisture">Foliage Moisture</div>
+        </div>
+        <div class="weather-card">
+          <div style="font-size:11px; color:var(--text3); text-transform:uppercase; font-weight:600;" data-i18n="wind_label">Wind Speed</div>
+          <div class="weather-val" id="wWind">8.2 km/h</div>
+          <div style="font-size:12px; color:var(--green);" data-i18n="wind_limit">Below 12km/h drift limit</div>
+        </div>
+        <div class="weather-card">
+          <div style="font-size:11px; color:var(--text3); text-transform:uppercase; font-weight:600;" data-i18n="rain_label">Rainfall Chance</div>
+          <div class="weather-val" id="wRain">30%</div>
+          <div style="font-size:12px; color:var(--text2);" data-i18n="forecast_24h">24h Forecast</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 5: AI Chatbot -->
+  <div id="chat-view" class="view">
+    <div style="padding:24px 32px 0;">
+      <div class="chat-container">
+        <div style="padding:16px 20px; border-bottom:1px solid var(--border); background:var(--bg3); display:flex; align-items:center; gap:12px;">
+          <span style="font-size:24px;">🤖</span>
+          <div>
+            <h3 style="font-size:15px; font-weight:700;" data-i18n="chat_title">AgriBot AI Farming Assistant</h3>
+            <p style="font-size:11px; color:var(--text3);" data-i18n="chat_sub">Expert guidance in English, Bengali, Hindi, Gujarati, Malvi, & Chhattisgarhi</p>
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <div class="msg bot" id="chatWelcomeMsg" data-i18n="chat_welcome">
+            👋 Hello! I am <b>AgriBot AI</b>. How can I assist with your tea plantation or crop health today? You can ask about disease treatments, organic remedies, fertilizer NPK ratios, or spraying conditions.
+          </div>
+        </div>
+
+        <div style="padding:8px 16px; display:flex; gap:8px; overflow-x:auto; background:var(--bg2);">
+          <button class="btn-secondary" style="padding:4px 10px; font-size:11px; white-space:nowrap;" onclick="sendQuickChat('How to treat Bird Eye Spot?')" data-i18n="quick_chat_1">🍃 Bird Eye Spot Cure</button>
+          <button class="btn-secondary" style="padding:4px 10px; font-size:11px; white-space:nowrap;" onclick="sendQuickChat('What is the best NPK fertilizer ratio for tea?')" data-i18n="quick_chat_2">🌱 Best NPK Ratio</button>
+          <button class="btn-secondary" style="padding:4px 10px; font-size:11px; white-space:nowrap;" onclick="sendQuickChat('When is it safe to spray pesticides?')" data-i18n="quick_chat_3">🌦️ Spraying Rules</button>
+        </div>
+
+        <div class="chat-input-row">
+          <button class="mic-btn" id="micBtn" onclick="toggleVoiceASR()" title="Omnilingual Voice Speech Recognition">🎙️</button>
+          <input type="text" id="chatInput" class="chat-input" placeholder="Type or speak your farming question..." data-i18n-placeholder="chat_placeholder" onkeypress="if(event.key==='Enter') sendChat()" />
+          <button class="btn-action" onclick="sendChat()" data-i18n="chat_send">Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIEW 6: Farmer Community -->
+  <div id="community-view" class="view">
+    <div class="community-layout">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+        <div>
+          <h2 style="font-size:24px; font-weight:700;" data-i18n="community_header">👨‍🌾 Farmer Community Forum</h2>
+          <p style="color:var(--text3); font-size:14px;" data-i18n="community_sub">Connect, share field observations, and learn from fellow growers.</p>
+        </div>
+        <button class="btn-action" onclick="openPostModal()" data-i18n="create_post">➕ Create New Post</button>
+      </div>
+
+      <div id="communityPostsContainer">
+        <div style="text-align:center; padding:40px; color:var(--text3);">Loading community posts...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Community Post Modal -->
+<div id="post-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:550px; display:block;">
+    <h3 style="font-size:18px; margin-bottom:16px;">Create Community Post</h3>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <input type="text" id="postTitle" placeholder="Post Title" style="background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; color:var(--text);" />
+      <select id="postCat" style="background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; color:var(--text);">
+        <option value="Disease Control">Disease Control</option>
+        <option value="Soil Health">Soil Health</option>
+        <option value="Irrigation">Irrigation</option>
+        <option value="General">General agronomy</option>
+      </select>
+      <textarea id="postContent" rows="4" placeholder="Describe your observation or question..." style="background:var(--bg); border:1px solid var(--border); padding:10px; border-radius:8px; color:var(--text); font-family:inherit;"></textarea>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px;">
+        <button class="btn-secondary" onclick="closePostModal()">Cancel</button>
+        <button class="btn-action" onclick="submitPost()">Publish Post</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Webcam Capture Modal -->
+<div id="webcam-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width:600px; display:block; text-align:center;">
+    <h3 style="font-size:18px; margin-bottom:12px;">Webcam Leaf Capture</h3>
+    <video id="webcamVideo" autoplay playsinline style="width:100%; height:320px; background:#000; border-radius:12px; margin-bottom:16px; object-fit:cover;"></video>
+    <div style="display:flex; justify-content:center; gap:12px;">
+      <button class="btn-secondary" onclick="closeWebcamModal()">Cancel</button>
+      <button class="btn-action" onclick="captureWebcamPhoto()">📸 Capture & Analyze</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentLang = 'en';
+  let lastResultState = null;
+  let timelineChart = null;
+
+  // Disease Name Localizations Across All 9 Languages
+  const diseaseNames = {
+    'Algal Leaf': {
+      en: 'Algal Leaf Spot',
+      bn: 'অ্যালগাল পাতার দাগ (Algal Leaf)',
+      hi: 'एलगल लीफ स्पॉट (Algal Leaf)',
+      gu: 'એલગલ લીફ સ્પોટ',
+      mwr: 'एलगल पत्ता दाग',
+      hne: 'एलगल पत्ता दाग',
+      mr: 'अॅलगल लीफ स्पॉट',
+      ta: 'ஆல்கா இலை புள்ளி',
+      te: 'ఆల్గల్ ఆకు మచ్చ'
+    },
+    'Algal Leaf Spot': {
+      en: 'Algal Leaf Spot',
+      bn: 'অ্যালগাল পাতার দাগ (Algal Leaf)',
+      hi: 'एलगल लीफ स्पॉट (Algal Leaf)',
+      gu: 'એલગલ લીફ સ્પોટ',
+      mwr: 'एलगल पत्ता दाग',
+      hne: 'एलगल पत्ता दाग',
+      mr: 'अॅलगल लीफ स्पॉट',
+      ta: 'ஆல்கா இலை புள்ளி',
+      te: 'ఆల్గల్ ఆకు మచ్చ'
+    },
+    'Anthracnose': {
+      en: 'Anthracnose',
+      bn: 'অ্যানথ্রাকনোজ (Anthracnose)',
+      hi: 'एंथ्रेक्नोज (Anthracnose)',
+      gu: 'એન્થ્રેક્નોઝ',
+      mwr: 'एंथ्रेक्नोज बीमारी',
+      hne: 'एंथ्रेक्नोज बीमारी',
+      mr: 'अँथ्रॅक्नोज',
+      ta: 'ஆந்த்ராக்னோஸ்',
+      te: 'ఆంత్రాక్నోస్'
+    },
+    'Bird Eye Spot': {
+      en: 'Bird Eye Spot',
+      bn: 'পাখির চোখের দাগ (Bird Eye Spot)',
+      hi: 'बर्ड आई स्पॉट (Bird Eye Spot)',
+      gu: 'બર્ડ આઈ સ્પોટ',
+      mwr: 'बर्ड आई पत्ता दाग',
+      hne: 'बर्ड आई पत्ता दाग',
+      mr: 'बर्ड आय स्पॉट',
+      ta: 'பறவை கண் புள்ளி',
+      te: 'బర్డ్ ఐ స్పాట్'
+    },
+    'Brown Blight': {
+      en: 'Brown Blight',
+      bn: 'বাদামী ব্লাইট (Brown Blight)',
+      hi: 'ब्राउन ब्लाइट (Brown Blight)',
+      gu: 'બ્રાઉન બ્લાઇટ',
+      mwr: 'भूरो रोग (Brown Blight)',
+      hne: 'भूरा रोग (Brown Blight)',
+      mr: 'ब्राउन ब्लाइट',
+      ta: 'பழுப்பு கருகல்',
+      te: 'బ్రౌన్ బ్లైట్'
+    },
+    'Gray Light': {
+      en: 'Gray Blight',
+      bn: 'ধূসর ব্লাইট (Gray Blight)',
+      hi: 'ग्रे ब्लाइट (Gray Blight)',
+      gu: 'ગ્રે બ્લાઇટ',
+      mwr: 'ग्रे ब्‍लाइट बीमारी',
+      hne: 'ग्रे ब्लाइट बीमारी',
+      mr: 'ग्रे ब्लाइट',
+      ta: 'சாம்பல் கருகல்',
+      te: 'గ్రే బ్లైట్'
+    },
+    'Gray Blight': {
+      en: 'Gray Blight',
+      bn: 'ধূসর ব্লাইট (Gray Blight)',
+      hi: 'ग्रे ब्लाइट (Gray Blight)',
+      gu: 'ગ્રે બ્લાઇટ',
+      mwr: 'ग्रे ब्‍लाइट बीमारी',
+      hne: 'ग्रे ब्लाइट बीमारी',
+      mr: 'ग्रे ब्लाइट',
+      ta: 'சாம்பல் கருகல்',
+      te: 'గ్రే బ్లైట్'
+    },
+    'Healthy': {
+      en: 'Healthy Crop',
+      bn: 'সুস্থ ফসল (Healthy)',
+      hi: 'स्वस्थ फसल (Healthy)',
+      gu: 'તંદુરસ્ત પાક',
+      mwr: 'बढ़िया फसल',
+      hne: 'बने फसल',
+      mr: 'निरोगी पीक',
+      ta: 'ஆரோக்கியமான பயிர்',
+      te: 'ఆరోగ్యకరమైన పంట'
+    },
+    'Helopeltis': {
+      en: 'Helopeltis Bug Damage',
+      bn: 'হেলোপেল্টিস পোকার আক্রমণ (Helopeltis)',
+      hi: 'हेलोपेल्टिस कीट प्रकोप (Helopeltis)',
+      gu: 'હેલોપેલ્ટિસ જીવાત',
+      mwr: 'हेलोपेल्टिस कीड़ा',
+      hne: 'हेलोपेल्टिस कीड़ा',
+      mr: 'हेलोपेल्टिस कीड',
+      ta: 'ஹெலோபெல்டிஸ் பூச்சி தாக்குதல்',
+      te: 'హెలోపెలటిస్ కీటక దాడి'
+    },
+    'Red Leaf Spot': {
+      en: 'Red Leaf Spot',
+      bn: 'লাল পাতার দাগ (Red Leaf Spot)',
+      hi: 'रेड लीफ स्पॉट (Red Leaf Spot)',
+      gu: 'રેડ લીફ સ્પોટ',
+      mwr: 'लाल पत्ता दाग',
+      hne: 'लाल पत्ता दाग',
+      mr: 'रेड लीफ स्पॉट',
+      ta: 'சிவப்பு இலை புள்ளி',
+      te: 'రెడ్ లీఫ్ స్పాట్'
+    },
+    'White Spot': {
+      en: 'White Leaf Spot',
+      bn: 'সাদা পাতার দাগ (White Spot)',
+      hi: 'व्हाइट लीफ स्पॉट (White Spot)',
+      gu: 'વાયટ સ્પોટ',
+      mwr: 'सफेद दाग',
+      hne: 'सफेद दाग',
+      mr: 'व्हाइट स्पॉट',
+      ta: 'வெள்ளை புள்ளி',
+      te: 'వైట్ స్పాట్'
+    }
+  };
+
+  function translateDisease(rawLabel, lang) {
+    if (!rawLabel) return '';
+    for (let key in diseaseNames) {
+      if (rawLabel.toLowerCase().includes(key.toLowerCase())) {
+        return diseaseNames[key][lang] || diseaseNames[key]['en'] || rawLabel;
+      }
+    }
+    return rawLabel;
+  }
+
+  // Complete Multilingual i18n Translation Dictionary
+  const i18n = {
+    en: {
+      sub_logo: "Smart Agribot Platform",
+      nav_dashboard: "Disease Dashboard",
+      nav_scan: "Leaf Scan & Upload",
+      nav_history: "Prediction History",
+      nav_weather: "Weather & Spray",
+      nav_chat: "AgriBot Chatbot",
+      nav_community: "Farmer Community",
+      stat_analyzed: "Analyzed",
+      stat_healthy: "Healthy",
+      stat_diseased: "Diseased",
+      stat_avgconf: "Avg Conf",
+      live_engine: "LIVE ENGINE",
+      select_lang_header: "Select Regional Language",
+      live_feed_title: "Live Agribot Feed",
+      drive_sync: "Google Drive Sync",
+      waiting_filename: "Waiting...",
+      awaiting_img: "Awaiting Agribot images via Google Drive",
+      ai_engine_tag: "ONNX / YOLOv8 AI Engine",
+      confidence_timeline: "📈 Confidence Timeline",
+      samples_unit: "samples",
+      sickness_classes: "🦠 Sickness Class Probabilities",
+      categories_count: "8 Categories",
+      awaiting_inference: "Awaiting AI inference...",
+      live_stream: "📋 Live Results Stream",
+      no_results_yet: "No results yet",
+      top_diagnosis: "🎯 Top AI Diagnosis",
+      primary_class: "Primary Classification",
+      awaiting: "Awaiting...",
+      awaiting_scan: "Awaiting scan",
+      healthy_crop: "Healthy Crop",
+      disease_detected: "Disease Detected",
+      scan_header: "🌿 Leaf Scan & Upload",
+      scan_sub: "Upload a leaf photo or capture directly from camera for instant AI diagnosis in your regional language.",
+      drag_drop: "Drag & Drop Leaf Photo",
+      browse_files: "Browse Files",
+      webcam_btn: "🎥 Open Webcam Camera",
+      quick_samples: "Quick Test Samples:",
+      sample_1: "🍃 Sample 1: Bird Eye",
+      sample_2: "🍃 Sample 2: Algal Leaf",
+      sample_3: "🍃 Sample 3: Healthy",
+      ai_diag_result: "AI Diagnostic Result",
+      curative_title: "💊 Curative Treatment Recommendation",
+      organic_title: "🌿 Organic / Biological Option",
+      preventive_title: "🛡️ Preventive Cultural Practice",
+      select_leaf_prompt: "Select a leaf image to generate specific pesticide recommendations.",
+      eco_treatments_prompt: "Eco-friendly treatments will display here.",
+      field_advice_prompt: "Field management advice will display here.",
+      severity_low: "Low Severity",
+      severity_moderate: "Moderate Severity",
+      severity_high: "High Severity",
+      health_score_label: "Health Score",
+      history_header: "📜 Prediction History Log",
+      history_sub: "Complete record of AI diagnostic scans with CSV export capability.",
+      export_csv: "📥 Export CSV Report",
+      th_timestamp: "Timestamp",
+      th_filename: "Filename",
+      th_diagnosis: "Diagnosis",
+      th_confidence: "Confidence",
+      th_severity: "Severity",
+      th_health_score: "Health Score",
+      th_action: "Action",
+      no_history_logs: "No prediction logs yet.",
+      view_image: "View Image",
+      weather_header: "🌦️ Regional Weather & Spraying Adviser",
+      weather_sub: "Real-time weather parameters and agricultural spray safety guidelines.",
+      spray_safety: "Spraying Safety Status",
+      optimal_spray: "Optimal for Spraying",
+      unfavorable_spray: "Avoid - High Rain/Wind Risk",
+      safe_conditions: "SAFE CONDITIONS",
+      temp_label: "Temperature",
+      humidity_label: "Relative Humidity",
+      wind_label: "Wind Speed",
+      rain_label: "Rainfall Chance",
+      ambient_temp: "Ambient Field Temp",
+      foliage_moisture: "Foliage Moisture",
+      wind_limit: "Below 12km/h drift limit",
+      forecast_24h: "24h Forecast",
+      chat_title: "AgriBot AI Farming Assistant",
+      chat_sub: "Expert guidance in English, Bengali, Hindi, Gujarati, Malvi, & Chhattisgarhi",
+      chat_welcome: "👋 Hello! I am <b>AgriBot AI</b>. How can I assist with your tea plantation or crop health today? You can ask about disease treatments, organic remedies, fertilizer NPK ratios, or spraying conditions.",
+      quick_chat_1: "🍃 Bird Eye Spot Cure",
+      quick_chat_2: "🌱 Best NPK Ratio",
+      quick_chat_3: "🌦️ Spraying Rules",
+      chat_placeholder: "Type or speak your farming question...",
+      chat_send: "Send",
+      community_header: "👨‍🌾 Farmer Community Forum",
+      community_sub: "Connect, share field observations, and learn from fellow growers.",
+      create_post: "➕ Create New Post"
+    },
+    bn: {
+      sub_logo: "স্মার্ট এগ্রিবট প্ল্যাটফর্ম",
+      nav_dashboard: "রোগ ড্যাশবোর্ড",
+      nav_scan: "পাতা স্ক্যান ও আপলোড",
+      nav_history: "পূর্ববর্তী ফলাফল",
+      nav_weather: "আবহাওয়া ও স্প্রে",
+      nav_chat: "এগ্রিবট চ্যাটবট",
+      nav_community: "কৃষক সমাজ",
+      stat_analyzed: "মোট পরীক্ষা",
+      stat_healthy: "সুস্থ ফসল",
+      stat_diseased: "আক্রান্ত ফসল",
+      stat_avgconf: "গড় সঠিকতা",
+      live_engine: "লাইভ ইঞ্জিন",
+      select_lang_header: "আঞ্চলিক ভাষা নির্বাচন করুন",
+      live_feed_title: "লাইভ এগ্রিবট ক্যামেরা ফিড",
+      drive_sync: "গুগল ড্রাইভ সিঙ্ক",
+      waiting_filename: "অপেক্ষা করা হচ্ছে...",
+      awaiting_img: "গুগল ড্রাইভের মাধ্যমে এগ্রিবট ছবির অপেক্ষায়...",
+      ai_engine_tag: "ONNX / YOLOv8 এআই ইঞ্জিন",
+      confidence_timeline: "📈 সময়ের সাথে নিখুঁততা",
+      samples_unit: "নমুনা",
+      sickness_classes: "🦠 রোগের সম্ভাবনা তালিকা",
+      categories_count: "৮টি বিভাগ",
+      awaiting_inference: "এআই রোগ নির্ণয়ের অপেক্ষায়...",
+      live_stream: "📋 লাইভ ফলাফল তালিকা",
+      no_results_yet: "এখনও কোনো ফলাফল নেই",
+      top_diagnosis: "🎯 প্রধান এআই রোগ নির্ণয়",
+      primary_class: "প্রধান শ্রেণীবিন্যাস",
+      awaiting: "অপেক্ষা করা হচ্ছে...",
+      awaiting_scan: "স্ক্যানের অপেক্ষায়",
+      healthy_crop: "সুস্থ ফসল",
+      disease_detected: "রোগ আক্রান্ত ফসল",
+      scan_header: "🌿 পাতা স্ক্যান ও আপলোড",
+      scan_sub: "আপনার মাতৃভাষায় তাৎক্ষণিক এআই রোগ নির্ণয়ের জন্য পাতার ছবি আপলোড করুন বা তুলুন।",
+      drag_drop: "পাতার ছবি এখানে রাখুন",
+      browse_files: "ছবি নির্বাচন করুন",
+      webcam_btn: "🎥 ওয়েবক্যাম ক্যামেরা চালু করুন",
+      quick_samples: "দ্রুত পরীক্ষার নমুনা:",
+      sample_1: "🍃 নমুনা ১: বার্ড আই স্পট",
+      sample_2: "🍃 নমুনা ২: অ্যালগাল লিফ",
+      sample_3: "🍃 নমুনা ৩: সুস্থ পাতা",
+      ai_diag_result: "এআই রোগ নির্ণয়ের ফলাফল",
+      curative_title: "💊 রাসায়নিক ওষুধ ও প্রতিকার",
+      organic_title: "🌿 জৈব / প্রাকৃতিক প্রতিকার",
+      preventive_title: "🛡️ প্রতিরোধমূলক ব্যবস্থা",
+      select_leaf_prompt: "নির্দিষ্ট কীটনাশক পরামর্শের জন্য একটি পাতার ছবি নির্বাচন করুন।",
+      eco_treatments_prompt: "পরিবেশবান্ধব চিকিৎসা এখানে প্রদর্শিত হবে।",
+      field_advice_prompt: "মাঠ ব্যবস্থাপনার পরামর্শ এখানে প্রদর্শিত হবে।",
+      severity_low: "কম তীব্রতা",
+      severity_moderate: "মাঝারি তীব্রতা",
+      severity_high: "উচ্চ তীব্রতা",
+      health_score_label: "স্বাস্থ্য স্কোর",
+      history_header: "📜 পূর্ববর্তী পরীক্ষার তালিকা",
+      history_sub: "সিএসভি রিপোর্ট ডাউনলোড সহ সকল পরীক্ষার সম্পূর্ণ রেকর্ড।",
+      export_csv: "📥 রিপোর্ট ডাউনলোড",
+      th_timestamp: "সময়",
+      th_filename: "ফাইলের নাম",
+      th_diagnosis: "রোগের নির্ণয়",
+      th_confidence: "সঠিকতা",
+      th_severity: "তীব্রতা",
+      th_health_score: "স্বাস্থ্য স্কোর",
+      th_action: "পদক্ষেপ",
+      no_history_logs: "এখনও কোনো পরীক্ষার রেকর্ড নেই।",
+      view_image: "ছবি দেখুন",
+      weather_header: "🌦️ আঞ্চলিক আবহাওয়া ও স্প্রে পরামর্শ",
+      weather_sub: "রিয়েল-টাইম আবহাওয়া এবং কীটনাশক স্প্রে করার নিরাপত্তা নির্দেশিকা।",
+      spray_safety: "কীটনাশক স্প্রে করার নিরাপত্তা অবস্থা",
+      optimal_spray: "স্প্রে করার উপযুক্ত সময়",
+      unfavorable_spray: "স্প্রে না করাই ভালো (বৃষ্টি/বাতাস)",
+      safe_conditions: "নিরাপদ অবস্থা",
+      temp_label: "তাপমাত্রা",
+      humidity_label: "আপেক্ষিক আর্দ্রতা",
+      wind_label: "বাতাসের গতি",
+      rain_label: "বৃষ্টির সম্ভাবনা",
+      ambient_temp: "পরিবেশের তাপমাত্রা",
+      foliage_moisture: "পাতার আর্দ্রতা",
+      wind_limit: "১২ কিমি/ঘণ্টার নিচে",
+      forecast_24h: "২৪ ঘণ্টার পূর্বাভাস",
+      chat_title: "এগ্রিবট এআই কৃষি সহকারী",
+      chat_sub: "বাংলা ও অন্যান্য আঞ্চলিক ভাষায় বিশেষজ্ঞ পরামর্শ",
+      chat_welcome: "👋 নমস্কার! আমি <b>এগ্রিবট এআই</b>। আজ আপনার চা বাগান বা ফসলের সুরক্ষায় কীভাবে সাহায্য করতে পারি? রোগ নিরাময়, সার বা আবহাওয়া নিয়ে প্রশ্ন করুন।",
+      quick_chat_1: "🍃 বার্ড আই প্রতিকার",
+      quick_chat_2: "🌱 সেরা NPK সারের অনুপাত",
+      quick_chat_3: "🌦️ স্প্রে করার নিয়ম",
+      chat_placeholder: "আপনার প্রশ্ন লিখুন বা মুখে বলুন...",
+      chat_send: "পাঠান",
+      community_header: "👨‍🌾 কৃষক সম্প্রদায় ফোরাম",
+      community_sub: "অন্যান্য কৃষকদের সাথে যুক্ত হন এবং অভিজ্ঞতা শেয়ার করুন।",
+      create_post: "➕ নতুন পোস্ট তৈরি করুন"
+    },
+    hi: {
+      sub_logo: "स्मार्ट एग्रीबॉट प्लेटफॉर्म",
+      nav_dashboard: "रोग डैशबोर्ड",
+      nav_scan: "पत्ती स्कैन एवं अपलोड",
+      nav_history: "निदान इतिहास",
+      nav_weather: "मौसम एवं छिड़काव",
+      nav_chat: "एग्रीबॉट चैटबॉट",
+      nav_community: "किसान समुदाय",
+      stat_analyzed: "जांचे गए",
+      stat_healthy: "स्वस्थ फसल",
+      stat_diseased: "ग्रसित फसल",
+      stat_avgconf: "औसत शुद्धता",
+      live_engine: "लाइव इंजन",
+      select_lang_header: "क्षेत्रीय भाषा चुनें",
+      live_feed_title: "लाइव एग्रीबॉट कैमरा फीड",
+      drive_sync: "गूगल ड्राइव सिंक",
+      waiting_filename: "प्रतीक्षा की जा रही है...",
+      awaiting_img: "गूगल ड्राइव से फोटो आने की प्रतीक्षा...",
+      ai_engine_tag: "ONNX / YOLOv8 एआई इंजन",
+      confidence_timeline: "📈 समय के साथ सटीकता",
+      samples_unit: "नमूने",
+      sickness_classes: "🦠 रोग संभावना सूची",
+      categories_count: "8 श्रेणियां",
+      awaiting_inference: "एआई रोग जांच की प्रतीक्षा...",
+      live_stream: "📋 लाइव जांच परिणाम",
+      no_results_yet: "अभी कोई परिणाम नहीं",
+      top_diagnosis: "🎯 मुख्य एआई रोग निदान",
+      primary_class: "प्राथमिक वर्गीकरण",
+      awaiting: "प्रतीक्षा...",
+      awaiting_scan: "स्कैन की प्रतीक्षा",
+      healthy_crop: "स्वस्थ फसल",
+      disease_detected: "रोग प्रभावित फसल",
+      scan_header: "🌿 पत्ती स्कैन एवं अपलोड",
+      scan_sub: "अपनी क्षेत्रीय भाषा में त्वरित एआई निदान के लिए पत्ती की फोटो अपलोड करें या कैमरे से खींचें।",
+      drag_drop: "पत्ती का फोटो यहाँ खींचें या चुनें",
+      browse_files: "फोटो चुनें",
+      webcam_btn: "🎥 वेबकैम कैमरा खोलें",
+      quick_samples: "त्वरित जांच नमूने:",
+      sample_1: "🍃 नमूना 1: बर्ड आई",
+      sample_2: "🍃 नमूना 2: एल्गल स्पॉट",
+      sample_3: "🍃 नमूना 3: स्वस्थ पत्ती",
+      ai_diag_result: "एआई जांच परिणाम",
+      curative_title: "💊 रासायनिक उपचार दवा सिफारिश",
+      organic_title: "🌿 जैविक / प्राकृतिक उपाय",
+      preventive_title: "🛡️ रोकथाम एवं सावधानी",
+      select_leaf_prompt: "सटीक दवा सलाह के लिए पत्ती की फोटो चुनें।",
+      eco_treatments_prompt: "पर्यावरण-अनुकूल जैविक उपाय यहाँ दिखेंगे।",
+      field_advice_prompt: "खेत प्रबंधन सलाह यहाँ दिखेगी।",
+      severity_low: "कम गंभीरता",
+      severity_moderate: "मध्यम गंभीरता",
+      severity_high: "उच्च गंभीरता",
+      health_score_label: "स्वास्थ्य स्कोर",
+      history_header: "📜 फसल जांच इतिहास",
+      history_sub: "CSV रिपोर्ट डाउनलोड सुविधा के साथ संपूर्ण जांच रिकॉर्ड।",
+      export_csv: "📥 रिपोर्ट डाउनलोड करें",
+      th_timestamp: "समय",
+      th_filename: "फ़ाइल नाम",
+      th_diagnosis: "रोग निदान",
+      th_confidence: "सटीकता",
+      th_severity: "गंभीरता",
+      th_health_score: "स्वास्थ्य स्कोर",
+      th_action: "कार्रवाई",
+      no_history_logs: "अभी कोई इतिहास रिकॉर्ड नहीं है।",
+      view_image: "फोटो देखें",
+      weather_header: "🌦️ क्षेत्रीय मौसम एवं दवा छिड़काव सलाह",
+      weather_sub: "वास्तविक समय मौसम स्थिति और कीटनाशक छिड़काव सुरक्षा।",
+      spray_safety: "छिड़काव सुरक्षा स्थिति",
+      optimal_spray: "छिड़काव के लिए उत्तम समय",
+      unfavorable_spray: "छिड़काव न करें (बारिश/हवा)",
+      safe_conditions: "सुरक्षित स्थिति",
+      temp_label: "तापमान",
+      humidity_label: "सापेक्ष आर्द्रता",
+      wind_label: "हवा की गति",
+      rain_label: "बारिश की संभावना",
+      ambient_temp: "क्षेत्र का तापमान",
+      foliage_moisture: "पत्तियों की नमी",
+      wind_limit: "12 किमी/घंटे से कम",
+      forecast_24h: "24 घंटे का पूर्वानुमान",
+      chat_title: "एग्रीबॉट एआई कृषि सलाहकार",
+      chat_sub: "हिंदी, गुजराती, मालवी एवं छत्तीसगढ़ी में कृषि मार्गदर्शन",
+      chat_welcome: "👋 नमस्कार! मैं <b>एग्रीबॉट एआई</b> हूँ। आज आपकी फसल सुरक्षा या चाय बागान में कैसे सहायता कर सकता हूँ?",
+      quick_chat_1: "🍃 बर्ड आई स्पॉट इलाज",
+      quick_chat_2: "🌱 उत्तम NPK खाद अनुपात",
+      quick_chat_3: "🌦️ छिड़काव नियम",
+      chat_placeholder: "अपना प्रश्न लिखें या बोलकर पूछें...",
+      chat_send: "भेजें",
+      community_header: "👨‍🌾 किसान समुदाय मंच",
+      community_sub: "अन्य किसानों से जुड़ें और अनुभव साझा करें।",
+      create_post: "➕ नया प्रश्न / पोस्ट जोड़ें"
+    },
+    gu: {
+      sub_logo: "સ્માર્ટ એગ્રીબોટ પ્લેટફોર્મ",
+      nav_dashboard: "રોગ ડેશબોર્ડ",
+      nav_scan: "પાંદડું સ્કેન અને અપલોડ",
+      nav_history: "નિદાન ઇતિહાસ",
+      nav_weather: "હવામાન અને છંટકાવ",
+      nav_chat: "એગ્રીબોટ ચેટબોટ",
+      nav_community: "ખેડૂત સમુદાય",
+      stat_analyzed: "તપાસાયેલ",
+      stat_healthy: "તંદુરસ્ત પાક",
+      stat_diseased: "રોગગ્રસ્ત પાક",
+      stat_avgconf: "સરેરાશ ચોકસાઈ",
+      live_engine: "લાઇવ એન્જિન",
+      select_lang_header: "પ્રાદેશિક ભાષા પસંદ કરો",
+      live_feed_title: "લાઈવ એગ્રીબોટ કેમેરા",
+      drive_sync: "ગુગલ ડ્રાઇવ સિંક",
+      waiting_filename: "રાહ જોઈ રહ્યા છીએ...",
+      awaiting_img: "ગુગલ ડ્રાઇવ પરથી ફોટો આવવાની રાહ...",
+      ai_engine_tag: "ONNX / YOLOv8 AI એન્જિન",
+      confidence_timeline: "📈 સમય સાથે ચોકસાઈ",
+      samples_unit: "નમૂના",
+      sickness_classes: "🦠 રોગની શક્યતાઓ",
+      categories_count: "8 શ્રેણીઓ",
+      awaiting_inference: "AI તપાસની રાહ જોઈ રહ્યા છીએ...",
+      live_stream: "📋 લાઈવ પરિણામ યાદી",
+      no_results_yet: "હજી કોઈ પરિણામ નથી",
+      top_diagnosis: "🎯 મુખ્ય AI નિદાન",
+      primary_class: "મુખ્ય વર્ગીકરણ",
+      awaiting: "રાહ જોઈ રહ્યા છીએ...",
+      awaiting_scan: "સ્કેનની રાહ",
+      healthy_crop: "તંદુરસ્ત પાક",
+      disease_detected: "રોગગ્રસ્ત પાક",
+      scan_header: "🌿 પાંદડું સ્કેન કરો",
+      scan_sub: "ઝડપી AI નિદાન માટે પાંદડાનો ફોટો અપલોડ કરો અથવા કેમેરાથી પાડો.",
+      drag_drop: "પાંદડાનો ફોટો અહીં મુકો",
+      browse_files: "ફોટો પસંદ કરો",
+      webcam_btn: "🎥 કેમેરા શરૂ કરો",
+      quick_samples: "ઝડપી તપાસ નમૂના:",
+      sample_1: "🍃 નમૂનો 1: બર્ડ આઈ",
+      sample_2: "🍃 નમૂનો 2: એલગલ સ્પોટ",
+      sample_3: "🍃 નમૂનો 3: તંદુરસ્ત પાંદડું",
+      ai_diag_result: "AI તપાસ પરિણામ",
+      curative_title: "💊 રાસાયણિક ઉપચાર અને દવા",
+      organic_title: "🌿 જૈવિક કીટનાશક ઉપાય",
+      preventive_title: "🛡️ રોગ અટકાવવાના પગલાં",
+      select_leaf_prompt: "ચોક્કસ દવા સલાહ માટે પાંદડાનો ફોટો પસંદ કરો.",
+      eco_treatments_prompt: "જૈવિક ઉપાયો અહીં દેખાશે.",
+      field_advice_prompt: "ખેતર વ્યવસ્થાપન સલાહ અહીં દેખાશે.",
+      severity_low: "ઓછી ગંભીરતા",
+      severity_moderate: "મધ્યમ ગંભીરતા",
+      severity_high: "ઉચ્ચ ગંભીરતા",
+      health_score_label: "તંદુરસ્તી સ્કોર",
+      history_header: "📜 તપાસ ઇતિહાસ",
+      history_sub: "CSV રિપોર્ટ ડાઉનલોડ સાથે સંપૂર્ણ ઇતિહાસ.",
+      export_csv: "📥 રિપોર્ટ ડાઉનલોડ કરો",
+      th_timestamp: "સમય",
+      th_filename: "ફાઇલ નામ",
+      th_diagnosis: "રોગ નિદાન",
+      th_confidence: "ચોકસાઈ",
+      th_severity: "ગંભીરતા",
+      th_health_score: "તંદુરસ્તી સ્કોર",
+      th_action: "પગલું",
+      no_history_logs: "હજુ સુધી કોઈ રેકોર્ડ નથી.",
+      view_image: "ફોટો જુઓ",
+      weather_header: "🌦️ હવામાન અને દવા છંટકાવ સલાહ",
+      weather_sub: "રીઅલ-ટાઇમ હવામાન અને છંટકાવ સલામતી.",
+      spray_safety: "છંટકાવ સલામતી સ્થિતિ",
+      optimal_spray: "છંટકાવ માટે ઉત્તમ સમય",
+      unfavorable_spray: "છંટકાવ ન કરવો (વરસાદ/પવન)",
+      safe_conditions: "સલામત સ્થિતિ",
+      temp_label: "તાપમાન",
+      humidity_label: "ભેજ",
+      wind_label: "પવનની ઝડપ",
+      rain_label: "વરસાદની શક્યતા",
+      ambient_temp: "તાપમાન",
+      foliage_moisture: "પાંદડાનો ભેજ",
+      wind_limit: "12 કમી/કલાકથી ઓછું",
+      forecast_24h: "24 કલાકની આગાહી",
+      chat_title: "એગ્રીબોટ AI કૃષિ સલાહકાર",
+      chat_sub: "ગુજરાતીમાં કૃષિ સલાહ અને રોગ નિદાન",
+      chat_welcome: "👋 નમસ્તે! હું <b>એગ્રીબોટ AI</b> છું. ચા ની ખેતી અને પાકની સુરક્ષા વિશે કઈ પણ પૂછો.",
+      quick_chat_1: "🍃 બર્ડ આઈ ઉપાય",
+      quick_chat_2: "🌱 ઉત્તમ NPK ખાતર",
+      quick_chat_3: "🌦️ છંટકાવ નિયમો",
+      chat_placeholder: "તમારો પ્રશ્ન લખો અથવા બોલો...",
+      chat_send: "મોકલો",
+      community_header: "👨‍🌾 ખેડૂત સમુદાય મંચ",
+      community_sub: "અન્ય ખેડૂતો સાથે જોડાઓ.",
+      create_post: "➕ નવો પ્રશ્ન ઉમેરો"
+    },
+    mwr: {
+      sub_logo: "स्मार्ट एग्रीबॉट प्लेटफॉर्म",
+      nav_dashboard: "रोग डैशबोर्ड",
+      nav_scan: "पत्ता स्कैन अर अपलोड",
+      nav_history: "जांच इतिहास",
+      nav_weather: "मौसम अर दवाई छिड़काव",
+      nav_chat: "एग्रीबॉट सलाहकार",
+      nav_community: "किसान समाज",
+      stat_analyzed: "कुल जांच",
+      stat_healthy: "बढ़िया फसल",
+      stat_diseased: "बीमार फसल",
+      stat_avgconf: "सटीकता",
+      live_engine: "चालू इंजन",
+      select_lang_header: "अपनी बोली चुनो",
+      live_feed_title: "लाइव कैमरा फीड",
+      drive_sync: "गूगल ड्राइव सिंक",
+      waiting_filename: "उडीक रिया...",
+      awaiting_img: "कैमरा फोटो की उडीक...",
+      ai_engine_tag: "ONNX / YOLOv8 एआई इंजन",
+      confidence_timeline: "📈 समय ग्राफ",
+      samples_unit: "सैंपल",
+      sickness_classes: "🦠 बीमारी सूची",
+      categories_count: "8 बीमारी",
+      awaiting_inference: "जांच वे री है...",
+      live_stream: "📋 लाइव रिजल्ट",
+      no_results_yet: "अभी कोई रिजल्ट नी",
+      top_diagnosis: "🎯 मुख्य एआई बीमारी जांच",
+      primary_class: "मुख्य बीमारी",
+      awaiting: "उडीक...",
+      awaiting_scan: "स्कैन की उडीक",
+      healthy_crop: "बढ़िया फसल",
+      disease_detected: "बीमार फसल",
+      scan_header: "🌿 पत्ता स्कैन अर अपलोड",
+      scan_sub: "मालवी भाषा म एआई बीमारी जांच बर पत्ता की फोटो अपलोड करो।",
+      drag_drop: "पत्ता की फोटो अठे लाओ",
+      browse_files: "फोटो चुनो",
+      webcam_btn: "🎥 कैमरा खोलो",
+      quick_samples: "सैंपल फोटो:",
+      sample_1: "🍃 1: बर्ड आई",
+      sample_2: "🍃 2: एल्गल स्पॉट",
+      sample_3: "🍃 3: बढ़िया पत्ता",
+      ai_diag_result: "एआई जांच रिजल्ट",
+      curative_title: "💊 दवाई अर छिड़काव सलाह",
+      organic_title: "🌿 देसी अर जैविक उपाय",
+      preventive_title: "🛡️ बचाव का तरीका",
+      select_leaf_prompt: "दवाई सलाह बर पत्ता की फोटो चुनो।",
+      eco_treatments_prompt: "देसी इलाज अठे दिखेगा।",
+      field_advice_prompt: "खेती सलाह अठे दिखेगी।",
+      severity_low: "कम बीमारी",
+      severity_moderate: "मध्यम बीमारी",
+      severity_high: "भारी बीमारी",
+      health_score_label: "फसल सेहत",
+      history_header: "📜 पुराना जांच रिकॉर्ड",
+      history_sub: "सब रिकॉर्ड अठे देखो अर डाउनलोड करो।",
+      export_csv: "📥 रिकॉर्ड डाउनलोड",
+      th_timestamp: "टेम",
+      th_filename: "फोटो नाम",
+      th_diagnosis: "बीमारी",
+      th_confidence: "सटीकता",
+      th_severity: "हालत",
+      th_health_score: "सेहत",
+      th_action: "काम",
+      no_history_logs: "कोई पुराना रिकॉर्ड नी है।",
+      view_image: "फोटो देखो",
+      weather_header: "🌦️ मौसम अर दवा छिड़काव सलाह",
+      weather_sub: "मौसम अर दवाई छिड़कने की सलाह।",
+      spray_safety: "छिड़काव हालत",
+      optimal_spray: "दवाई छिड़कवा को बढ़िया टेम",
+      unfavorable_spray: "दवाई मत छिड़को (मींह/बायरा)",
+      safe_conditions: "बढ़िया टेम",
+      temp_label: "तापमान",
+      humidity_label: "नमी",
+      wind_label: "बायरा की चाल",
+      rain_label: "मींह का चांस",
+      ambient_temp: "तापमान",
+      foliage_moisture: "पत्ता की नमी",
+      wind_limit: "कम हवा",
+      forecast_24h: "24 घंटा",
+      chat_title: "एग्रीबॉट मालवी कृषि सलाहकार",
+      chat_sub: "मालवी बोली म खेती अर बीमारी का सवाल पूछो",
+      chat_welcome: "👋 राम राम! मुँ <b>एग्रीबॉट एआई</b> हूँ। चाय की खेती अर दवाई का सवाल पूछो।",
+      quick_chat_1: "🍃 बर्ड आई बीमारी",
+      quick_chat_2: "🌱 बढ़िया खाद",
+      quick_chat_3: "🌦️ छिड़काव टेम",
+      chat_placeholder: "अठे सवाल लिखो या बोलो...",
+      chat_send: "भेजो",
+      community_header: "👨‍🌾 किसान चौपाल",
+      community_sub: "किसान आपस म बात करो।",
+      create_post: "➕ नई बात जोड़ो"
+    },
+    hne: {
+      sub_logo: "स्मार्ट एग्रीबॉट प्लेटफॉर्म",
+      nav_dashboard: "रोग डैशबोर्ड",
+      nav_scan: "पत्ता स्कैन अउ अपलोड",
+      nav_history: "पुराना जांच",
+      nav_weather: "मौसम अउ छिड़काव",
+      nav_chat: "एग्रीबॉट सलाहकार",
+      nav_community: "किसान समाज",
+      stat_analyzed: "जांचे गिस",
+      stat_healthy: "बने फसल",
+      stat_diseased: "बीमार फसल",
+      stat_avgconf: "सटीकता",
+      live_engine: "चालू इंजन",
+      select_lang_header: "भाषा चुनव",
+      live_feed_title: "लाइव कैमरा",
+      drive_sync: "गूगल ड्राइव सिंक",
+      waiting_filename: "अगोरत हे...",
+      awaiting_img: "फोटो के अगोरा हे...",
+      ai_engine_tag: "ONNX / YOLOv8 एआई इंजन",
+      confidence_timeline: "📈 समय ग्राफ",
+      samples_unit: "सैंपल",
+      sickness_classes: "🦠 बीमारी के सूची",
+      categories_count: "8 बीमारी",
+      awaiting_inference: "जांच होवत हे...",
+      live_stream: "📋 रिजल्ट सूची",
+      no_results_yet: "अभि कोनो रिजल्ट नइये",
+      top_diagnosis: "🎯 मुख्य बीमारी जांच",
+      primary_class: "मुख्य बीमारी",
+      awaiting: "अगोरत...",
+      awaiting_scan: "स्कैन के अगोरा",
+      healthy_crop: "बने फसल",
+      disease_detected: "बीमार फसल",
+      scan_header: "🌿 पत्ता स्कैन अउ अपलोड",
+      scan_sub: "छत्तीसगढ़ी म बीमारी जांच बर पत्ता के फोटो खींचव अउ अपलोड करव।",
+      drag_drop: "पत्ता के फोटो इहां लावव",
+      browse_files: "फोटो चुनव",
+      webcam_btn: "🎥 कैमरा खोलव",
+      quick_samples: "सैंपल फोटो:",
+      sample_1: "🍃 1: बर्ड आई",
+      sample_2: "🍃 2: एल्गल स्पॉट",
+      sample_3: "🍃 3: बने पत्ता",
+      ai_diag_result: "एआई जांच रिजल्ट",
+      curative_title: "💊 दवाई अउ छिड़काव सलाह",
+      organic_title: "🌿 जैविक/देसी उपाय",
+      preventive_title: "🛡️ बचाव के तरीका",
+      select_leaf_prompt: "दवाई सलाह बर पत्ता के फोटो चुनव।",
+      eco_treatments_prompt: "देसी उपाय इहां दिखही।",
+      field_advice_prompt: "खेती सलाह इहां दिखही।",
+      severity_low: "कम बीमारी",
+      severity_moderate: "माझिल बीमारी",
+      severity_high: "भारी बीमारी",
+      health_score_label: "फसल सेहत",
+      history_header: "📜 पुराना जांच रिकॉर्ड",
+      history_sub: "सब्बो जांच के रिकॉर्ड देखव अउ डाउनलोड करव।",
+      export_csv: "📥 रिपोर्ट डाउनलोड",
+      th_timestamp: "बेरा",
+      th_filename: "फोटो नाम",
+      th_diagnosis: "बीमारी",
+      th_confidence: "सटीकता",
+      th_severity: "हालत",
+      th_health_score: "सेहत",
+      th_action: "काम",
+      no_history_logs: "अभि पुराना रिकॉर्ड नइये।",
+      view_image: "फोटो देखव",
+      weather_header: "🌦️ मौसम अउ छिड़काव सलाह",
+      weather_sub: "मौसम अउ दवा छिड़काव के सलाह।",
+      spray_safety: "छिड़काव हालत",
+      optimal_spray: "दवा छिड़के के बने बेरा",
+      unfavorable_spray: "दवा झन छिड़कव (पानी/हवा)",
+      safe_conditions: "बने बेरा",
+      temp_label: "तापमान",
+      humidity_label: "नमी",
+      wind_label: "हवा के चाल",
+      rain_label: "पानी गिरे के चांस",
+      ambient_temp: "तापमान",
+      foliage_moisture: "पत्ता के नमी",
+      wind_limit: "कम हवा",
+      forecast_24h: "24 घंटा",
+      chat_title: "एग्रीबॉट छत्तीसगढ़ी सलाहकार",
+      chat_sub: "छत्तीसगढ़ी भाषा म खेती अउ दवाई के बात पूछव",
+      chat_welcome: "👋 जय जोहार! मैं <b>एग्रीबॉट एआई</b> अंव। फसल अउ दवाई बर बात पूछव।",
+      quick_chat_1: "🍃 बर्ड आई बीमारी",
+      quick_chat_2: "🌱 बने खाद",
+      quick_chat_3: "🌦️ छिड़काव बेरा",
+      chat_placeholder: "इहां सवाल लिखव या बोलव...",
+      chat_send: "भेजव",
+      community_header: "👨‍🌾 किसान चौपाल",
+      community_sub: "किसान मन गोठ-बात करव।",
+      create_post: "➕ नवा बात जोड़व"
+    },
+    mr: {
+      sub_logo: "स्मार्ट एग्रीबॉट प्लॅटफॉर्म",
+      nav_dashboard: "रोग डॅशबोर्ड",
+      nav_scan: "पान स्कॅन आणि अपलोड",
+      nav_history: "निदान इतिहास",
+      nav_weather: "हवामान आणि फवारणी",
+      nav_chat: "एग्रीबॉट चॅटबॉट",
+      nav_community: "शेतकरी समुदाय",
+      stat_analyzed: "तपासलेले",
+      stat_healthy: "निरोगी पिके",
+      stat_diseased: "बाधित पिके",
+      stat_avgconf: "सरासरी अचूकता",
+      live_engine: "लाइव्ह इंजिन",
+      select_lang_header: "प्रादेशिक भाषा निवडा",
+      live_feed_title: "लाइव्ह कॅमेरा फीड",
+      drive_sync: "गुगल ड्राइव्ह सिंक",
+      waiting_filename: "वाट पाहत आहे...",
+      awaiting_img: "कॅमेरा फोटोची वाट पाहत आहे...",
+      ai_engine_tag: "ONNX / YOLOv8 AI इंजिन",
+      confidence_timeline: "📈 वेळेनुसार अचूकता",
+      samples_unit: "नमूने",
+      sickness_classes: "🦠 रोग शक्यता यादी",
+      categories_count: "8 श्रेणी",
+      awaiting_inference: "AI तपासाची वाट पाहत आहे...",
+      live_stream: "📋 लाइव्ह निकाल प्रवाह",
+      no_results_yet: "अद्याप निकाल नाही",
+      top_diagnosis: "🎯 मुख्य AI निदान",
+      primary_class: "प्राथमिक वर्गीकरण",
+      awaiting: "वाट पाहत आहे...",
+      awaiting_scan: "स्कॅनची वाट",
+      healthy_crop: "निरोगी पीक",
+      disease_detected: "रोगग्रस्त पीक",
+      scan_header: "🌿 पान स्कॅन करा",
+      scan_sub: "त्वरित AI निदानासाठी पानाचा फोटो अपलोड करा किंवा कॅमेऱ्याने घ्या.",
+      drag_drop: "पानाचा फोटो येथे टाका",
+      browse_files: "फोटो निवडा",
+      webcam_btn: "🎥 कॅमेरा सुरू करा",
+      quick_samples: "जलद तपासणी नमुने:",
+      sample_1: "🍃 नमूना 1: बर्ड आय",
+      sample_2: "🍃 नमूना 2: अॅलगल स्पॉट",
+      sample_3: "🍃 नमूना 3: निरोगी पान",
+      ai_diag_result: "AI तपासणी निकाल",
+      curative_title: "💊 रासायनिक औषध उपचार",
+      organic_title: "🌿 सेंद्रिय / जैविक उपाय",
+      preventive_title: "🛡️ प्रतिबंधात्मक काळजी",
+      select_leaf_prompt: "औषध सल्ल्यासाठी पानाचा फोटो निवडा.",
+      eco_treatments_prompt: "जैविक उपाय येथे दिसतील.",
+      field_advice_prompt: "शेती सल्ला येथे दिसेल.",
+      severity_low: "कमी तीव्रता",
+      severity_moderate: "मध्यम तीव्रता",
+      severity_high: "उच्च तीव्रता",
+      health_score_label: "आरोग्य स्कोर",
+      history_header: "📜 निदान इतिहास नोंद",
+      history_sub: "CSV अहवाल डाउनलोड सह संपूर्ण नोंद.",
+      export_csv: "📥 अहवाल डाउनलोड करा",
+      th_timestamp: "वेळ",
+      th_filename: "फाइल नाव",
+      th_diagnosis: "रोग निदान",
+      th_confidence: "अचूकता",
+      th_severity: "तीव्रता",
+      th_health_score: "आरोग्य स्कोर",
+      th_action: "कृती",
+      no_history_logs: "अद्याप कोणतीही नोंद नाही.",
+      view_image: "फोटो पहा",
+      weather_header: "🌦️ हवामान आणि फवारणी सल्ला",
+      weather_sub: "हवामान आणि औषध फवारणी सुरक्षितता.",
+      spray_safety: "फवारणी सुरक्षा स्थिती",
+      optimal_spray: "फवारणीसाठी योग्य वेळ",
+      unfavorable_spray: "फवारणी टाळा (पाऊस/वारा)",
+      safe_conditions: "सुरक्षित स्थिती",
+      temp_label: "तापमान",
+      humidity_label: "आर्द्रता",
+      wind_label: "वाऱ्याचा वेग",
+      rain_label: "पावसाची शक्यता",
+      ambient_temp: "तापमान",
+      foliage_moisture: "पानांची आर्द्रता",
+      wind_limit: "12 किमी/तास पेक्षा कमी",
+      forecast_24h: "24 तासांचा अंदाज",
+      chat_title: "एग्रीबॉट AI शेती सहाय्यक",
+      chat_sub: "मराठीत शेती सल्ला आणि रोग उपाय",
+      chat_welcome: "👋 नमस्कार! मी <b>एग्रीबॉट एआय</b> आहे. शेती आणि पीक रोगांबद्दल काहीही विचारा.",
+      quick_chat_1: "🍃 बर्ड आय उपाय",
+      quick_chat_2: "🌱 उत्तम NPK खत",
+      quick_chat_3: "🌦️ फवारणी नियम",
+      chat_placeholder: "तुमचा प्रश्न लिहा किंवा बोला...",
+      chat_send: "पाठवा",
+      community_header: "👨‍🌾 शेतकरी मंच",
+      community_sub: "इतर शेतकऱ्यांशी जोडा.",
+      create_post: "➕ नवीन पोस्ट तयार करा"
+    },
+    ta: {
+      sub_logo: "ஸ்மார்ட் அக்ரிபோட் இயங்குதளம்",
+      nav_dashboard: "நோய் டாஷ்போர்டு",
+      nav_scan: "இலை ஸ்கேன் & பதிவேற்றம்",
+      nav_history: "கணிப்பு வரலாறு",
+      nav_weather: "வானிலை & தெளிப்பு",
+      nav_chat: "அக்ரிபோட் சாட்பாட்",
+      nav_community: "விவசாயி சமூகம்",
+      stat_analyzed: "பரிசோதிக்கப்பட்டவை",
+      stat_healthy: "ஆரோக்கியமான பயிர்",
+      stat_diseased: "பாதிக்கப்பட்ட பயிர்",
+      stat_avgconf: "சராசரி துல்லியம்",
+      live_engine: "லைவ் என்ஜின்",
+      select_lang_header: "மொழியைத் தேர்ந்தெடுக்கவும்",
+      live_feed_title: "லைவ் கேமரா ஃபீட்",
+      drive_sync: "கூகிள் டிரைவ் ஒத்திசைவு",
+      waiting_filename: "காத்திருக்கிறது...",
+      awaiting_img: "படத்திற்காக காத்திருக்கிறது...",
+      ai_engine_tag: "ONNX / YOLOv8 AI என்ஜின்",
+      confidence_timeline: "📈 காலப்போக்கில் துல்லியம்",
+      samples_unit: "மாதிரிகள்",
+      sickness_classes: "🦠 நோய் வாய்ப்பு பட்டியல்",
+      categories_count: "8 பிரிவுகள்",
+      awaiting_inference: "ஆராய்ச்சி காத்திருக்கிறது...",
+      live_stream: "📋 லைவ் முடிவுகள்",
+      no_results_yet: "இன்னும் முடிவுகள் இல்லை",
+      top_diagnosis: "🎯 முதன்மை AI நோய் கண்டறிதல்",
+      primary_class: "முதன்மை வகைப்பாடு",
+      awaiting: "காத்திருக்கிறது...",
+      awaiting_scan: "ஸ்கேன் காத்திருக்கிறது",
+      healthy_crop: "ஆரோக்கியமான பயிர்",
+      disease_detected: "பாதிக்கப்பட்ட பயிர்",
+      scan_header: "🌿 இலை ஸ்கேன்",
+      scan_sub: "உடனடி AI நோயறிதலுக்கு இலையின் புகைப்படத்தைப் பதிவேற்றவும்.",
+      drag_drop: "இலை படத்தை இங்கே இழுக்கவும்",
+      browse_files: "கோப்பைத் தேர்ந்தெடுக்கவும்",
+      webcam_btn: "🎥 கேமராவைத் திறக்கவும்",
+      quick_samples: "மாதிரி படங்கள்:",
+      sample_1: "🍃 மாதிரி 1: பறவை கண்",
+      sample_2: "🍃 மாதிரி 2: ஆல்கா புள்ளி",
+      sample_3: "🍃 மாதிரி 3: ஆரோக்கியமான இலை",
+      ai_diag_result: "AI பரிசோதனை முடிவு",
+      curative_title: "💊 வேதியியல் சிகிச்சை பரிந்துரை",
+      organic_title: "🌿 இயற்கை / உயிரியல் தீர்வு",
+      preventive_title: "🛡️ தடுப்பு நடவடிக்கைகள்",
+      select_leaf_prompt: "மருந்து ஆலோசனை பெற இலை படத்தை தேர்ந்தெடுக்கவும்.",
+      eco_treatments_prompt: "இயற்கை தீர்வுகள் இங்கே தோன்றும்.",
+      field_advice_prompt: "பராமரிப்பு ஆலோசனைகள் இங்கே தோன்றும்.",
+      severity_low: "குறைந்த பாதிப்பு",
+      severity_moderate: "மிதமான பாதிப்பு",
+      severity_high: "அதிக பாதிப்பு",
+      health_score_label: "ஆரோக்கிய மதிப்பெண்",
+      history_header: "📜 பரிசோதனை வரலாறு",
+      history_sub: "முழுமையான வரலாறு மற்றும் பதிவிறக்கம்.",
+      export_csv: "📥 அறிக்கை பதிவிறக்கம்",
+      th_timestamp: "நேரம்",
+      th_filename: "கோப்பு பெயர்",
+      th_diagnosis: "நோய் கண்டறிதல்",
+      th_confidence: "துல்லியம்",
+      th_severity: "பாதிப்பு",
+      th_health_score: "ஆரோக்கியம்",
+      th_action: "செயல்",
+      no_history_logs: "பதிவுகள் எதுவும் இல்லை.",
+      view_image: "படத்தைப் பார்",
+      weather_header: "🌦️ வானிலை & தெளிப்பு ஆலோசனை",
+      weather_sub: "வானிலை மற்றும் பூச்சிக்கொல்லி தெளிப்பு வழிகாட்டல்.",
+      spray_safety: "தெளிப்பு பாதுகாப்பு நிலை",
+      optimal_spray: "தெளிப்பதற்கு சிறந்த நேரம்",
+      unfavorable_spray: "தெளிப்பதை தவிர்க்கவும் (மழை/காற்று)",
+      safe_conditions: "பாதுகாப்பான நிலை",
+      temp_label: "வெப்பநிலை",
+      humidity_label: "ஈரப்பதம்",
+      wind_label: "காற்றின் வேகம்",
+      rain_label: "மழை வாய்ப்பு",
+      ambient_temp: "வெப்பநிலை",
+      foliage_moisture: "இலை ஈரப்பதம்",
+      wind_limit: "12 கி.மீ/ம குறைவு",
+      forecast_24h: "24 மணி நேர கணிப்பு",
+      chat_title: "அக்ரிபோட் AI விவசாய உதவியாளர்",
+      chat_sub: "தமிழில் பயிர் நோய் மற்றும் விவசாய வழிகாட்டுதல்",
+      chat_welcome: "👋 வணக்கம்! நான் <b>அக்ரிபோட் AI</b>. விவசாயம் மற்றும் பயிர் நோய்கள் பற்றி ஏதேனும் கேளுங்கள்.",
+      quick_chat_1: "🍃 பறவை கண் புள்ளி தீர்வு",
+      quick_chat_2: "🌱 சிறந்த NPK உரம்",
+      quick_chat_3: "🌦️ தெளிப்பு விதிகள்",
+      chat_placeholder: "உங்கள் கேள்வியை தட்டச்சு செய்யவும்...",
+      chat_send: "அனுப்பு",
+      community_header: "👨‍🌾 விவசாயி சமூக மன்றம்",
+      community_sub: "மற்ற விவசாயிகளுடன் இணையுங்கள்.",
+      create_post: "➕ புதிய இடுகை"
+    },
+    te: {
+      sub_logo: "స్మార్ట్ అగ్రిబోట్ ప్లాట్‌ఫారమ్",
+      nav_dashboard: "వ్యాధి డాష్‌బోర్డ్",
+      nav_scan: "ఆకు స్కాన్ & అప్‌లోడ్",
+      nav_history: "స్కానింగ్ చరిత్ర",
+      nav_weather: "వాతావరణం & పిచికారీ",
+      nav_chat: "అగ్రిబోట్ చాట్‌బోట్",
+      nav_community: "రైతు సంఘం",
+      stat_analyzed: "పరీక్షించినవి",
+      stat_healthy: "ఆరోగ్యకరమైన పంట",
+      stat_diseased: "వ్యాధి సోకిన పంట",
+      stat_avgconf: "సగటు ఖచ్చితత్వం",
+      live_engine: "లైవ్ ఇంజిన్",
+      select_lang_header: "భాషను ఎంచుకోండి",
+      live_feed_title: "లైవ్ కెమెరా ఫీడ్",
+      drive_sync: "గూగుల్ డ్రైవ్ సింక్",
+      waiting_filename: "వేచి చూస్తోంది...",
+      awaiting_img: "ఫోటో కోసం వేచి చూస్తోంది...",
+      ai_engine_tag: "ONNX / YOLOv8 AI ఇంజిన్",
+      confidence_timeline: "📈 కాలక్రమేణా ఖచ్చితత్వం",
+      samples_unit: "నమూనాలు",
+      sickness_classes: "🦠 వ్యాధి సంభావ్యత జాబితా",
+      categories_count: "8 వర్గాలు",
+      awaiting_inference: "AI పరిశోధన కోసం వేచి చూస్తోంది...",
+      live_stream: "📋 లైవ్ ఫలితాల జాబితా",
+      no_results_yet: "ఇంకా ఫలితాలు లేవు",
+      top_diagnosis: "🎯 ప్రధాన AI రోగ నిర్ధారణ",
+      primary_class: "ప్రధాన వర్గీకరణ",
+      awaiting: "వేచి చూస్తోంది...",
+      awaiting_scan: "స్కాన్ కోసం వేచి చూస్తోంది",
+      healthy_crop: "ఆరోగ్యకరమైన పంట",
+      disease_detected: "వ్యాధి సోకిన పంట",
+      scan_header: "🌿 ఆకు స్కాన్ & అప్‌లోడ్",
+      scan_sub: "తక్షణ AI నిర్ధారణ కోసం ఆకు ఫోటోను అప్‌లోడ్ చేయండి.",
+      drag_drop: "ఆకు ఫోటోను ఇక్కడ వేయండి",
+      browse_files: "ఫైల్‌ను ఎంచుకోండి",
+      webcam_btn: "🎥 కెమెరా ప్రారంభించండి",
+      quick_samples: "నమూనా ఫోటోలు:",
+      sample_1: "🍃 నమూనా 1: బర్డ్ ఐ",
+      sample_2: "🍃 నమూనా 2: ఆల్గల్ స్పాట్",
+      sample_3: "🍃 నమూనా 3: ఆరోగ్యకరమైన ఆకు",
+      ai_diag_result: "AI పరీక్ష ఫలితం",
+      curative_title: "💊 రసాయన చికిత్స సిఫార్సు",
+      organic_title: "🌿 సేంద్రీయ / సహజ నివారణ",
+      preventive_title: "🛡️ నివారణ చర్యలు",
+      select_leaf_prompt: "మందు సలహా కోసం ఆకు ఫోటోను ఎంచుకోండి.",
+      eco_treatments_prompt: "సేంద్రీయ పరిష్కారాలు ఇక్కడ కనిపిస్తాయి.",
+      field_advice_prompt: "సాగు సలహాలు ఇక్కడ కనిపిస్తాయి.",
+      severity_low: "తక్కువ తీవ్రత",
+      severity_moderate: "మధ్యస్థ తీవ్రత",
+      severity_high: "ఎక్కువ తీవ్రత",
+      health_score_label: "ఆరోగ్య స్కోర్",
+      history_header: "📜 పరీక్షా చరిత్ర",
+      history_sub: "సంపూర్ణ చరిత్ర మరియు డౌన్‌లోడ్.",
+      export_csv: "📥 నివేదిక డౌన్‌లోడ్",
+      th_timestamp: "సమయం",
+      th_filename: "ఫైల్ పేరు",
+      th_diagnosis: "వ్యాధి నిర్ధారణ",
+      th_confidence: "ఖచ్చితత్వం",
+      th_severity: "తీవ్రత",
+      th_health_score: "ఆరోగ్యం",
+      th_action: "చర్య",
+      no_history_logs: "ఇంకా ఎటువంటి రికార్డులు లేవు.",
+      view_image: "ఫోటో చూడండి",
+      weather_header: "🌦️ ప్రాంతీయ వాతావరణం & పిచికారీ సలహా",
+      weather_sub: "వాతావరణం మరియు మందు పిచికారీ భద్రత.",
+      spray_safety: "పిచికారీ భద్రతా స్థితి",
+      optimal_spray: "పిచికారీకి అనుకూల సమయం",
+      unfavorable_spray: "పిచికారీ చేయవద్దు (వర్షం/గాలి)",
+      safe_conditions: "సురక్షితమైన సమయం",
+      temp_label: "ఉష్ణోగ్రత",
+      humidity_label: "తేమ",
+      wind_label: "గాలి వేగం",
+      rain_label: "వర్షం అవకాశం",
+      ambient_temp: "ఉష్ణోగ్రత",
+      foliage_moisture: "ఆకుల తేమ",
+      wind_limit: "12 కిమీ/గం కంటే తక్కువ",
+      forecast_24h: "24 గంటల అంచనా",
+      chat_title: "అగ్రిబోట్ AI వ్యవసాయ సహాయకుడు",
+      chat_sub: "తెలుగులో వ్యవసాయ సలహాలు మరియు సూచనలు",
+      chat_welcome: "👋 నమస్కారం! నేను <b>అగ్రిబోట్ AI</b>. పంట వ్యాధులు మరియు వ్యవసాయం గురించి ఏదైనా అడగండి.",
+      quick_chat_1: "🍃 బర్డ్ ఐ నివారణ",
+      quick_chat_2: "🌱 ఉత్తమ NPK ఎరువులు",
+      quick_chat_3: "ఈ పిచికారీ నియమాలు",
+      chat_placeholder: "మీ ప్రశ్నను టైప్ చేయండి లేదా మాట్లాడండి...",
+      chat_send: "పంపండి",
+      community_header: "👨‍🌾 రైతు కమ్యూనిటీ ఫోరమ్",
+      community_sub: "ఇతర రైతులతో కనెక్ట్ అవ్వండి.",
+      create_post: "➕ కొత్త పోస్ట్"
+    }
+  };
+
+  function toggleLangDropdown() {
+    document.getElementById('langMenu').classList.toggle('active');
+  }
+
+  function setLanguage(langCode, labelStr) {
+    currentLang = langCode;
+    document.getElementById('currentLangLabel').innerText = labelStr;
+    document.getElementById('langMenu').classList.remove('active');
+
+    // Update active state in menu
+    document.querySelectorAll('.lang-item').forEach(el => el.classList.remove('selected'));
+    const selEl = document.getElementById('item-' + langCode);
+    if(selEl) selEl.classList.add('selected');
+
+    const dict = i18n[langCode] || i18n.en;
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(dict[key]) el.innerText = dict[key];
+    });
+
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      if(dict[key]) el.placeholder = dict[key];
+    });
+
+    // Re-render welcome message
+    const welcomeEl = document.getElementById('chatWelcomeMsg');
+    if(welcomeEl && dict.chat_welcome) welcomeEl.innerHTML = dict.chat_welcome;
+
+    // Refresh dynamic data views immediately
+    if (lastResultState) updateDashboardUI(lastResultState);
+    fetchHistoryTable();
+  }
+
+  // Voice ASR Speech Recognition
+  let isRecording = false;
+  let speechRec = null;
+
+  function toggleVoiceASR() {
+    const micBtn = document.getElementById('micBtn');
+    
+    if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      triggerBackendASR();
+      return;
+    }
+
+    if(isRecording) {
+      if(speechRec) speechRec.stop();
+      micBtn.classList.remove('recording');
+      isRecording = false;
+      return;
+    }
+
+    const SpeechRecClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+    speechRec = new SpeechRecClass();
+    speechRec.continuous = false;
+    speechRec.interimResults = false;
+    
+    const langMap = { 'hi': 'hi-IN', 'gu': 'gu-IN', 'bn': 'bn-IN', 'ta': 'ta-IN', 'te': 'te-IN', 'mr': 'mr-IN', 'en': 'en-US' };
+    speechRec.lang = langMap[currentLang] || 'hi-IN';
+
+    micBtn.classList.add('recording');
+    isRecording = true;
+
+    speechRec.onresult = function(event) {
+      const text = event.results[0][0].transcript;
+      document.getElementById('chatInput').value = text;
+      micBtn.classList.remove('recording');
+      isRecording = false;
+      sendChat();
+    };
+
+    speechRec.onerror = function(err) {
+      micBtn.classList.remove('recording');
+      isRecording = false;
+      triggerBackendASR();
+    };
+
+    speechRec.start();
+  }
+
+  async function triggerBackendASR() {
+    try {
+      const res = await fetch('/api/asr', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ lang: currentLang })
+      });
+      const data = await res.json();
+      if(data.status === 'ok') {
+        appendMsg(`🎤 [Speech Input (${data.language.toUpperCase()})]: ${data.transcript}`, 'user');
+        appendMsg(data.reply, 'bot');
+      }
+    } catch(e) {}
+  }
+
+  function switchTab(viewId, el) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(viewId).classList.add('active');
+
+    if(viewId === 'history-view') fetchHistoryTable();
+    if(viewId === 'weather-view') fetchWeather();
+    if(viewId === 'community-view') fetchCommunityPosts();
+  }
+
+  // Poll latest result
+  async function pollLatest() {
+    try {
+      const res = await fetch('/api/latest-result');
+      const data = await res.json();
+      lastResultState = data;
+      updateDashboardUI(data);
+    } catch(e) {}
+  }
+
+  function updateDashboardUI(data) {
+    if(!data || !data.filename) return;
+    const dict = i18n[currentLang] || i18n.en;
+
+    document.getElementById('filename').innerText = data.filename || 'Drive Image';
+    document.getElementById('imgTs').innerText = data.timestamp || 'Just now';
+
+    if(data.processed_url) {
+      const pImg = document.getElementById('plantImg');
+      pImg.src = data.processed_url + '?t=' + new Date().getTime();
+      pImg.style.display = 'block';
+      document.getElementById('noImg').style.display = 'none';
+    }
+
+    const translatedTopLabel = translateDisease(data.top_label, currentLang);
+    document.getElementById('topLabel').innerText = translatedTopLabel || data.top_label || dict.awaiting;
+    document.getElementById('ringPct').innerText = (data.top_confidence || 0).toFixed(0) + '%';
+    
+    const ringFill = document.getElementById('ringFill');
+    if(ringFill) {
+      const offset = 220 - (220 * (data.top_confidence || 0) / 100);
+      ringFill.style.strokeDashoffset = offset;
+    }
+
+    const badge = document.getElementById('diseaseBadge');
+    if(badge) {
+      const isH = (data.top_label || '').toLowerCase().includes('healthy');
+      badge.className = isH ? 'disease-badge healthy' : 'disease-badge diseased';
+      badge.innerHTML = isH ? `<span>✅</span><span>${dict.healthy_crop}</span>` : `<span>🦠</span><span>${dict.disease_detected}</span>`;
+    }
+
+    // Fixed predictions template list rendering with disease translation
+    const predsList = document.getElementById('predsList');
+    if(predsList && data.predictions) {
+      predsList.innerHTML = data.predictions.map((p, idx) => {
+        const nameTranslated = translateDisease(p.label, currentLang);
+        return `
+          <div class="pred-row ${idx===0 ? 'top':''}">
+            <span style="font-family:monospace; font-size:10px; width:16px; color:var(--text3)">#${idx+1}</span>
+            <div class="pred-name">${nameTranslated}</div>
+            <div class="pred-bar-bg"><div class="pred-bar" style="width:${p.confidence}%"></div></div>
+            <div class="pred-pct">${p.confidence.toFixed(1)}%</div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  // File Upload Handlers
+  async function handleFileSelect(evt) {
+    const file = evt.target.files[0];
+    if(!file) return;
+    uploadImageFile(file);
+  }
+
+  async function uploadImageFile(fileObj) {
+    const formData = new FormData();
+    formData.append('file', fileObj);
+    formData.append('lang', currentLang);
+
+    document.getElementById('scanDiseaseName').innerText = 'Analyzing Leaf...';
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const data = await res.json();
+      if(data.status === 'ok') displayScanResult(data.result);
+    } catch(e) { alert('Upload failed: ' + e); }
+  }
+
+  function displayScanResult(res) {
+    const dict = i18n[currentLang] || i18n.en;
+    const translatedName = translateDisease(res.top_label, currentLang);
+    document.getElementById('scanDiseaseName').innerText = translatedName;
+    document.getElementById('scanConfidence').innerText = `Confidence: ${res.top_confidence}%`;
+    document.getElementById('scanHealthScore').innerText = res.health_score + '%';
+
+    const pill = document.getElementById('scanSeverityPill');
+    const sevKey = 'severity_' + (res.severity || 'low').toLowerCase();
+    pill.innerText = dict[sevKey] || (res.severity + ' Severity');
+    pill.className = `metric-pill ${(res.severity || 'low').toLowerCase()}`;
+
+    document.getElementById('scanTreatmentText').innerText = res.treatment;
+    document.getElementById('scanOrganicText').innerText = res.organic_treatment;
+    document.getElementById('scanPreventionText').innerText = res.prevention;
+
+    if(res.processed_url) {
+      const imgEl = document.getElementById('scanPreviewImg');
+      imgEl.src = res.processed_url;
+      imgEl.style.display = 'block';
+    }
+  }
+
+  async function loadSampleImage(className) {
+    document.getElementById('scanDiseaseName').innerText = `Analyzing ${className}...`;
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ sample: className, lang: currentLang })
+      });
+      const data = await res.json();
+      if(data.status === 'ok') displayScanResult(data.result);
+    } catch(e) { alert('Analysis failed: ' + e); }
+  }
+
+  async function fetchDbStatus() {
+    try {
+      const res = await fetch('/api/db/status');
+      const data = await res.json();
+      const badge = document.getElementById('dbStatusBadge');
+      if(badge && data.engine) {
+        badge.innerHTML = `🍃 DB: ${data.engine} (${data.database})`;
+      }
+    } catch(e) {}
+  }
+
+  async function fetchHistoryTable() {
+    const tbody = document.getElementById('historyTableBody');
+    const dict = i18n[currentLang] || i18n.en;
+    try {
+      const res = await fetch('/api/history');
+      const data = await res.json();
+      if(data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:30px; color:var(--text3);">${dict.no_history_logs}</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = data.map(item => {
+        const diagTranslated = translateDisease(item.top_label, currentLang);
+        const sevKey = 'severity_' + (item.severity || 'low').toLowerCase();
+        const sevText = dict[sevKey] || (item.severity || 'Low');
+        return `
+          <tr>
+            <td style="font-family:monospace; color:var(--text3)">${item.timestamp}</td>
+            <td style="font-family:monospace; color:var(--accent)">${item.filename}</td>
+            <td><strong>${diagTranslated}</strong></td>
+            <td style="font-family:monospace">${item.top_confidence}%</td>
+            <td><span class="metric-pill ${(item.severity||'low').toLowerCase()}">${sevText}</span></td>
+            <td style="font-weight:700; color:var(--accent)">${item.health_score || 90}%</td>
+            <td><button class="btn-secondary" style="padding:4px 10px; font-size:11px;" onclick="window.open('${item.processed_url}')">${dict.view_image}</button></td>
+          </tr>
+        `;
+      }).join('');
+    } catch(e) {}
+  }
+
+  async function fetchWeather() {
+    const loc = document.getElementById('weatherLocSelect').value;
+    try {
+      const res = await fetch('/api/weather?location=' + loc);
+      const data = await res.json();
+      const c = data.current;
+      document.getElementById('wTemp').innerText = c.temp + '°C';
+      document.getElementById('wHumidity').innerText = c.humidity + '%';
+      document.getElementById('wWind').innerText = c.wind + ' km/h';
+      document.getElementById('wRain').innerText = c.rain_prob + '%';
+      document.getElementById('sprayAdvisoryText').innerText = c.spray_advisory;
+    } catch(e) {}
+  }
+
+  async function sendChat() {
+    const input = document.getElementById('chatInput');
+    const txt = input.value.trim();
+    if(!txt) return;
+
+    appendMsg(txt, 'user');
+    input.value = '';
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ message: txt, lang: currentLang, context: lastResultState || {} })
+      });
+      const data = await res.json();
+      appendMsg(data.reply, 'bot');
+    } catch(e) {
+      appendMsg('Sorry, chatbot encountered an error.', 'bot');
+    }
+  }
+
+  function sendQuickChat(txt) {
+    document.getElementById('chatInput').value = txt;
+    sendChat();
+  }
+
+  function appendMsg(text, sender) {
+    const msgs = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `msg ${sender}`;
+    div.innerHTML = text;
+    msgs.appendChild(div);
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  async function fetchCommunityPosts() {
+    const c = document.getElementById('communityPostsContainer');
+    try {
+      const res = await fetch('/api/community/posts');
+      const posts = await res.json();
+      c.innerHTML = posts.map(p => `
+        <div class="post-card">
+          <div class="post-header">
+            <div class="post-author"><span>${p.avatar}</span> <span>${p.author}</span></div>
+            <span class="post-cat">${p.category}</span>
+          </div>
+          <h4 style="font-size:16px; margin-bottom:8px;">${p.title}</h4>
+          <p style="color:var(--text2); font-size:13px; line-height:1.5; margin-bottom:12px;">${p.content}</p>
+          <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
+            <button class="btn-secondary" style="padding:4px 12px; font-size:11px;" onclick="likePost('${p.id}')">👍 Likes (${p.likes})</button>
+            <span style="font-size:11px; color:var(--text3)">${p.timestamp}</span>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {}
+  }
+
+  async function likePost(id) {
+    await fetch(`/api/community/posts/${id}/like`, { method: 'POST' });
+    fetchCommunityPosts();
+  }
+
+  function openPostModal() { document.getElementById('post-modal').classList.add('active'); }
+  function closePostModal() { document.getElementById('post-modal').classList.remove('active'); }
+
+  async function submitPost() {
+    const title = document.getElementById('postTitle').value;
+    const category = document.getElementById('postCat').value;
+    const content = document.getElementById('postContent').value;
+    if(!title || !content) return alert('Title and content are required');
+
+    await fetch('/api/community/posts', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ title, category, content, author: 'Farmer Member' })
+    });
+    closePostModal();
+    fetchCommunityPosts();
+  }
+
+  // Webcam
+  let webcamStream = null;
+  function openWebcamModal() {
+    document.getElementById('webcam-modal').classList.add('active');
+    navigator.mediaDevices.getUserMedia({ video: true }).then(stream => {
+      webcamStream = stream;
+      document.getElementById('webcamVideo').srcObject = stream;
+    }).catch(e => alert('Webcam error: ' + e));
+  }
+
+  function closeWebcamModal() {
+    if(webcamStream) webcamStream.getTracks().forEach(t => t.stop());
+    document.getElementById('webcam-modal').classList.remove('active');
+  }
+
+  async function captureWebcamPhoto() {
+    const video = document.getElementById('webcamVideo');
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const b64 = canvas.toDataURL('image/jpeg');
+
+    closeWebcamModal();
+    document.getElementById('scanDiseaseName').innerText = 'Analyzing Webcam Capture...';
+
+    const res = await fetch('/api/upload', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ image: b64, filename: 'webcam_capture.jpg' })
+    });
+    const data = await res.json();
+    if(data.status === 'ok') displayScanResult(data.result);
+  }
+
+  // Init chart
+  const ctx = document.getElementById('timelineChart')?.getContext('2d');
+  if(ctx) {
+    timelineChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['1', '2', '3', '4', '5', '6'],
+        datasets: [{
+          label: 'Confidence %',
+          data: [82, 91, 88, 95, 89, 96],
+          borderColor: '#34d399',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: false
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { display: false },
+          y: { min: 0, max: 100, ticks: { color: '#5d8a6c' }, grid: { color: '#253d2e' } }
+        }
+      }
+    });
+  }
+
+  // Close dropdown on outside click
+  window.onclick = function(event) {
+    if (!event.target.closest('.lang-dropdown-btn') && !event.target.closest('.lang-menu')) {
+      document.getElementById('langMenu').classList.remove('active');
+    }
+  }
+
+  setInterval(pollLatest, 3000);
+  pollLatest();
+  fetchDbStatus();
+</script>
+
+</body>
+</html>
