@@ -24,6 +24,19 @@ def get_tea_images():
                     images.append((class_folder.name, p))
     return images
 
+def get_agribot_folder_id(service):
+    try:
+        query = "name = 'Agribotimage' and mimeType = 'application/vnd.google-apps.folder' and trashed = false"
+        results = service.files().list(q=query, spaces="drive", fields="files(id, name)").execute()
+        folders = results.get("files", [])
+        if folders:
+            return folders[0]["id"]
+        meta = {"name": "Agribotimage", "mimeType": "application/vnd.google-apps.folder"}
+        folder = service.files().create(body=meta, fields="id").execute()
+        return folder["id"]
+    except Exception:
+        return FOLDER_ID
+
 def main():
     images = get_tea_images()
     if not images:
@@ -34,8 +47,9 @@ def main():
     with open("token.pickle", "rb") as token:
         creds = pickle.load(token)
     service = build("drive", "v3", credentials=creds)
+    target_folder_id = get_agribot_folder_id(service)
 
-    print("🚀 Starting Live Agribot Feeder...")
+    print(f"🚀 Starting Live Agribot Feeder (Drive Folder ID: {target_folder_id})...")
     
     counter = 1
     while True:
@@ -43,7 +57,7 @@ def main():
         ts = time.strftime("%Y%m%d_%H%M%S")
         dest_filename = f"live_feed_{ts}.jpg"
 
-        file_metadata = {"name": dest_filename, "parents": [FOLDER_ID]}
+        file_metadata = {"name": dest_filename, "parents": [target_folder_id]}
         media = MediaFileUpload(str(img_path), mimetype="image/jpeg")
 
         try:
