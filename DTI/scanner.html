@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+<title>LeafAI Scanner</title>
+
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+
+<body>
+
+<section class="scanner-page">
+
+<h1>AI Leaf Scanner</h1>
+
+<p>Upload a leaf image for AI analysis</p>
+
+<div class="scanner-ui">
+
+<div class="scan-view">
+
+<img id="preview" src="assets/placeholder.png">
+
+<div class="scan-grid"></div>
+<div class="scan-line"></div>
+
+</div>
+
+<div class="scan-controls">
+
+<input type="file" id="fileInput">
+
+<button onclick="analyzeLeaf()">Start Analysis</button>
+
+</div>
+
+</div>
+
+</section>
+
+<div class="loader" id="loader">
+
+<div class="spinner"></div>
+
+<p>Running AI detection...</p>
+
+</div>
+
+<script src="js/script.js"></script>
+
+</body>
+</html>

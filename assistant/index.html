@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plant Disease Assistant</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <h1>Plant Disease Assistant</h1>
+        <p class="tagline">Chat, voice, weather, and YOLO detection</p>
+      </header>
+
+      <main class="grid">
+        <section class="card weather-card" aria-label="Weather">
+          <h2>Weather</h2>
+          <div class="weather-search">
+            <input
+              type="text"
+              id="cityInput"
+              placeholder="City name (e.g. Mumbai)"
+              autocomplete="off"
+            />
+            <button type="button" id="weatherBtn">Get weather</button>
+          </div>
+          <div id="weatherBody" class="weather-body muted">
+            Enter a city and tap Get weather.
+          </div>
+        </section>
+
+        <section class="card chat-card" aria-label="Chat">
+          <h2>Plant & farming chat</h2>
+          <div id="chatMessages" class="chat-messages"></div>
+          <div class="chat-input-row">
+            <button type="button" id="micBtn" class="mic-btn" title="Speak">
+              🎤
+            </button>
+            <input
+              type="text"
+              id="chatInput"
+              placeholder="Ask about plant diseases, crops, soil..."
+              autocomplete="off"
+            />
+            <button type="button" id="sendBtn">Send</button>
+          </div>
+          <p id="micStatus" class="mic-status muted"></p>
+        </section>
+
+        <section class="card detect-card" aria-label="Disease detection">
+          <h2>Disease detection (YOLO)</h2>
+          <p class="muted small">
+            Upload a leaf image. The model uses your trained <code>best.pt</code> when
+            available.
+          </p>
+          <div class="upload-row">
+            <input type="file" id="fileInput" accept="image/*" />
+            <button type="button" id="predictBtn" disabled>Analyze</button>
+          </div>
+          <div id="previewWrap" class="preview-wrap hidden">
+            <img id="previewImg" alt="Preview" />
+          </div>
+          <pre id="predictOut" class="predict-out muted"></pre>
+        </section>
+      </main>
+
+      <footer class="footer muted small">
+        Backend: <code>/chat</code>, <code>/weather</code>, <code>/predict</code>
+      </footer>
+    </div>
+
+    <script src="/js/app.js"></script>
+  </body>
+</html>

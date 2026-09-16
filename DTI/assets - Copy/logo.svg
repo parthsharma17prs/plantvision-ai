@@ -1,0 +1,27 @@
+<svg width="220" height="80" viewBox="0 0 220 80" xmlns="http://www.w3.org/2000/svg">
+
+<!-- vision circle -->
+<circle cx="40" cy="40" r="28" fill="#1B5E20"></circle>
+
+<!-- leaf -->
+<path d="M40 18
+C55 30 55 50 40 62
+C25 50 25 30 40 18" fill="#66BB6A"></path>
+
+<!-- leaf vein -->
+<line x1="40" y1="20" x2="40" y2="60" stroke="#0D3B2E" stroke-width="3"></line>
+
+<!-- AI eye / vision node -->
+<circle cx="40" cy="40" r="5" fill="white"></circle>
+
+<!-- mission ring -->
+<circle cx="40" cy="40" r="20" stroke="#4CAF50" stroke-width="2" fill="none"></circle>
+
+<!-- brand name -->
+<text x="80" y="47" font-family="Poppins, Arial" font-size="28" font-weight="600" fill="#ffffff">
+
+LeafAI
+
+</text>
+
+</svg>

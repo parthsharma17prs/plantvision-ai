@@ -1,13 +1,99 @@
+# =============================================================================
+# Environment, API Keys & Credentials (NEVER COMMIT)
+# =============================================================================
+.env
+.env.*
+!.env.example
+token.pickle
+token.json
+credentials.json
+service_account.json
+Agribot/token.pickle
+Agribot/credentials.json
+
+# =============================================================================
+# Python & Virtual Environments
+# =============================================================================
 __pycache__/
-*.pyc
-*.log
-.DS_Store
-plant_dashboard/model_training/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+.mypy_cache/
+
+# =============================================================================
+# Node.js / React Frontend (DTI)
+# =============================================================================
+node_modules/
+DTI/node_modules/
+DTI/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# =============================================================================
+# Runtime Data, Feeds & Database
+# =============================================================================
+*.db
+*.sqlite
+*.sqlite3
+predictions.db
+plantvision.db
+agribot_feed/
 plant_dashboard/static/processed_*.jpg
 plant_dashboard/static/latest.jpg
 plant_dashboard/community_posts.json
-plant_dashboard/token.json
-token.pickle
-credentials.json
-.venv/
-env/
+plant_dashboard/model_training/
+
+# =============================================================================
+# Model Weights & Training Runs
+# =============================================================================
+runs/
+*.onnx
+# Ignore trained/custom checkpoints, allow lightweight base model if needed
+*.pt
+!yolov8n.pt
+
+# =============================================================================
+# Datasets & Temporary Images
+# =============================================================================
+dataset/
+datasets/
+train/
+test/
+valid/
+PlantVillage_for_object_detection/
+labels_src/
+inference_outputs/
+
+# =============================================================================
+# Logs & System Files
+# =============================================================================
+*.log
+logs/
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
