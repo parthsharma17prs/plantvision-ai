@@ -1665,8 +1665,21 @@
   }
 
   function updateDashboardUI(data) {
-    if(!data || !data.filename) return;
+    if(!data) return;
     const dict = i18n[currentLang] || i18n.en;
+
+    // Real-time Stat Counters Updates
+    if(data.stats) {
+      document.getElementById('hTotal').innerText = data.stats.total_analyzed || 0;
+      document.getElementById('hHealthy').innerText = data.stats.healthy_count || 0;
+      document.getElementById('hDiseased').innerText = data.stats.diseased_count || 0;
+      document.getElementById('hAvgConf').innerText = data.stats.avg_confidence ? (data.stats.avg_confidence.toFixed(1) + '%') : '—';
+
+      document.getElementById('sTotal').innerText = data.stats.total_analyzed || 0;
+      document.getElementById('sAvg').innerText = data.stats.avg_confidence ? (data.stats.avg_confidence.toFixed(1) + '%') : '—';
+    }
+
+    if(!data.filename) return;
 
     document.getElementById('filename').innerText = data.filename || 'Drive Image';
     document.getElementById('imgTs').innerText = data.timestamp || 'Just now';
