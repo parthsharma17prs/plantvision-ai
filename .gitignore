@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.log
+.DS_Store
+plant_dashboard/model_training/
+plant_dashboard/static/processed_*.jpg
+plant_dashboard/static/latest.jpg
+plant_dashboard/community_posts.json
+plant_dashboard/token.json
+token.pickle
+credentials.json
+.venv/
+env/
