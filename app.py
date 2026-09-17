@@ -551,16 +551,30 @@ Symptoms:
 Prevention:
 Treatment:"""
 
-def _gemini_model_names_to_try() -> list[str]:
-    return [
-        "gemini-2.0-flash",
-        "gemini-2.0-flash-lite",
-        "gemini-1.5-flash",
-        "gemini-1.5-flash-latest",
-        "gemini-1.5-pro",
-    ]
+# Cache for models, active model, and responses to drastically reduce latency
+_GEMINI_MODEL_INSTANCES: dict[tuple[str, str], Any] = {}
+_RECOMMENDATION_CACHE: dict[str, str] = {}
+_CHAT_CACHE: dict[str, str] = {}
+_ACTIVE_GEMINI_MODEL: str | None = None
 
-def _gemini_generate(system_instruction: str, user_message: str, empty_message: str = "Could not generate reply.") -> str:
+def _gemini_model_names_to_try() -> list[str]:
+    # Ultra-low-latency Flash Lite models prioritized first
+    models = [
+        "gemini-3.5-flash-lite",
+        "gemini-flash-lite-latest",
+        "gemini-3.1-flash-lite",
+        "gemini-3.6-flash",
+        "gemini-flash-latest",
+        "gemini-3.5-flash",
+        "gemini-3.7-flash",
+    ]
+    global _ACTIVE_GEMINI_MODEL
+    if _ACTIVE_GEMINI_MODEL and _ACTIVE_GEMINI_MODEL in models:
+        return [_ACTIVE_GEMINI_MODEL] + [m for m in models if m != _ACTIVE_GEMINI_MODEL]
+    return models
+
+def _gemini_generate(system_instruction: str, user_message: str, empty_message: str = "Could not generate reply.", max_tokens: int = 380) -> str:
+    global _ACTIVE_GEMINI_MODEL
     try:
         import google.generativeai as genai
     except ImportError:
@@ -573,13 +587,26 @@ def _gemini_generate(system_instruction: str, user_message: str, empty_message: 
     genai.configure(api_key=api_key)
     last_err = None
 
+    gen_config = genai.types.GenerationConfig(
+        max_output_tokens=max_tokens,
+        temperature=0.25,
+        top_p=0.85
+    )
+
     for model_name in _gemini_model_names_to_try():
         try:
-            model = genai.GenerativeModel(model_name=model_name, system_instruction=system_instruction)
-            response = model.generate_content(user_message)
+            cache_key = (model_name, system_instruction)
+            if cache_key in _GEMINI_MODEL_INSTANCES:
+                model = _GEMINI_MODEL_INSTANCES[cache_key]
+            else:
+                model = genai.GenerativeModel(model_name=model_name, system_instruction=system_instruction)
+                _GEMINI_MODEL_INSTANCES[cache_key] = model
+
+            response = model.generate_content(user_message, generation_config=gen_config)
             text = getattr(response, "text", "") or ""
             out = text.strip()
             if out:
+                _ACTIVE_GEMINI_MODEL = model_name
                 return out
         except Exception as exc:
             last_err = exc
@@ -767,8 +794,16 @@ def api_chat() -> Any:
     msg = str(body.get("message", "")).strip()
     if not msg:
         return jsonify({"error": "message is required"}), 400
-    reply = _gemini_generate(CHAT_SYSTEM, msg)
-    return jsonify({"reply": reply.replace("\x00", "")})
+
+    cache_key = msg.lower()
+    if cache_key in _CHAT_CACHE:
+        return jsonify({"reply": _CHAT_CACHE[cache_key], "cached": True})
+
+    reply = _gemini_generate(CHAT_SYSTEM, msg, max_tokens=350)
+    clean_reply = reply.replace("\x00", "")
+    if "Gemini Error" not in clean_reply and len(clean_reply) > 20:
+        _CHAT_CACHE[cache_key] = clean_reply
+    return jsonify({"reply": clean_reply})
 
 @app.post("/api/recommendation")
 def api_recommendation() -> Any:
@@ -781,6 +816,10 @@ def api_recommendation() -> Any:
     conf = float(body.get("confidence", 0) or 0)
     hint = str(body.get("staticHint", "") or "").strip()
 
+    cache_key = f"{disease.lower()}_{round(sev/15)}_{round(health/15)}"
+    if cache_key in _RECOMMENDATION_CACHE:
+        return jsonify({"recommendation": _RECOMMENDATION_CACHE[cache_key], "cached": True})
+
     prompt = (
         f"Diagnosed Leaf Details:\n"
         f"- Disease: {disease}\n"
@@ -788,10 +827,13 @@ def api_recommendation() -> Any:
         f"- Estimated Severity: {sev:.1f}%\n"
         f"- Plant Health Index: {health:.1f}%\n"
         f"- Note: {hint}\n\n"
-        "Provide tailored treatment, cause, symptoms, and organic prevention for smallholder farmers."
+        "Provide concise, tailored treatment, cause, symptoms, and organic prevention for smallholder farmers."
     )
-    rec = _gemini_generate(RECOMMENDATION_SYSTEM, prompt)
-    return jsonify({"recommendation": rec.replace("\x00", "")})
+    rec = _gemini_generate(RECOMMENDATION_SYSTEM, prompt, max_tokens=380)
+    clean_rec = rec.replace("\x00", "")
+    if "Gemini Error" not in clean_rec and len(clean_rec) > 20:
+        _RECOMMENDATION_CACHE[cache_key] = clean_rec
+    return jsonify({"recommendation": clean_rec})
 
 @app.get("/weather")
 def api_weather() -> Any:
