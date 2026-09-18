@@ -1,9 +1,10 @@
 """
 train_yolo.py
 
-Train a YOLOv8 detection model (Ultralytics) on the prepared plant disease datasets:
-- PlantDoc (Object Detection with 30 classes and bounding boxes) via data_plantdoc.yaml
-- PlantVillage (PlantVillage dataset with 15 classes) via data_plantvillage.yaml
+Train a YOLOv8 detection model (Ultralytics) on the plant disease datasets:
+- PlantDoc: Real-world field images with bounding boxes (30 classes) via data_plantdoc.yaml
+- PlantVillage: Laboratory leaf images with bounding boxes (15 classes) via data_plantvillage.yaml
+- Combined: Unified dataset merging both datasets (31 classes) via data_combined.yaml
 
 Outputs / metrics:
 - runs/detect/train/weights/best.pt
@@ -29,9 +30,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--dataset",
         type=str,
-        choices=["plantdoc", "plantvillage"],
-        default="plantdoc",
-        help="Dataset preset: 'plantdoc' (default) or 'plantvillage'.",
+        choices=["combined", "plantdoc", "plantvillage"],
+        default="combined",
+        help="Dataset preset: 'combined' (default), 'plantdoc', or 'plantvillage'.",
     )
     parser.add_argument(
         "--data",
@@ -43,9 +44,9 @@ def parse_args() -> argparse.Namespace:
         "--model",
         type=str,
         default="yolov8n.pt",
-        help="Pretrained YOLOv8 model to start from (default: yolov8n.pt).",
+        help="Pretrained YOLOv8 model to start from (e.g. yolov8n.pt or best.pt, default: yolov8n.pt).",
     )
-    parser.add_argument("--epochs", type=int, default=50, help="Number of training epochs (default: 50).")
+    parser.add_argument("--epochs", type=int, default=30, help="Number of training epochs (default: 30).")
     parser.add_argument("--imgsz", type=int, default=640, help="Image size for training (default: 640).")
     parser.add_argument(
         "--batch",
@@ -62,13 +63,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workers",
         type=int,
-        default=4,
-        help="Dataloader workers (default: 4).",
+        default=2,
+        help="Dataloader workers (default: 2 for Windows CPU/GPU stability).",
+    )
+    parser.add_argument(
+        "--fraction",
+        type=float,
+        default=1.0,
+        help="Fraction of dataset to use for training (e.g. 0.1 for 10%, default: 1.0).",
     )
     parser.add_argument(
         "--quick-test",
         action="store_true",
-        help="Quick smoke-test run (1 epoch, reduced images) to verify the training pipeline on CPU.",
+        help="Quick smoke-test run (1 epoch, 2% images, imgsz 320) to verify the training pipeline on CPU.",
     )
     return parser.parse_args()
 
@@ -117,14 +124,16 @@ def main() -> int:
     if args.data:
         data_path = (repo_root / args.data).resolve()
     else:
-        if args.dataset == "plantvillage":
+        if args.dataset == "combined":
+            data_path = repo_root / "data_combined.yaml"
+        elif args.dataset == "plantvillage":
             data_path = repo_root / "data_plantvillage.yaml"
         else:
             data_path = repo_root / "data_plantdoc.yaml"
 
     if not data_path.exists():
         print(f"[ERROR] Dataset configuration not found at: {data_path}")
-        print("Please run `python setup_datasets.py` first to extract and generate the configs.")
+        print("Please run `python setup_datasets.py` first to prepare datasets and generate the configs.")
         return 2
 
     # ---- Step 2: Validate image paths and counts ----
@@ -145,6 +154,7 @@ def main() -> int:
     print("=" * 60)
     print("🌿 PlantVision AI — YOLOv8 Training Pipeline")
     print("=" * 60)
+    print(f"- Dataset Mode:   {args.dataset.upper()}")
     print(f"- Dataset Config: {data_path.name}")
     print(f"- Dataset Root:   {dataset_root}")
     print(f"- Train Images:   {n_train}")
@@ -158,13 +168,18 @@ def main() -> int:
         print("[ERROR] ultralytics package is missing. Install with: pip install ultralytics")
         return 1
 
-    print(f"\n[INFO] Loading base model: {args.model}")
-    model = YOLO(args.model)
+    model_src = args.model
+    if not Path(model_src).exists() and (repo_root / model_src).exists():
+        model_src = str(repo_root / model_src)
+
+    print(f"\n[INFO] Loading base model: {model_src}")
+    model = YOLO(model_src)
 
     # ---- Step 4: Configure Training Parameters ----
     epochs = 1 if args.quick_test else args.epochs
     imgsz = 320 if args.quick_test else args.imgsz
     batch = 4 if args.quick_test else args.batch
+    fraction = 0.02 if args.quick_test else args.fraction
 
     train_kwargs = {
         "data": str(data_path).replace("\\", "/"),
@@ -172,6 +187,7 @@ def main() -> int:
         "imgsz": imgsz,
         "batch": batch,
         "workers": args.workers,
+        "fraction": fraction,
         "project": "runs",
         "name": "detect/train",
         "exist_ok": True,
@@ -180,13 +196,22 @@ def main() -> int:
     }
 
     if args.quick_test:
-        train_kwargs["fraction"] = 0.02  # Use only 2% of images for quick pipeline validation
         print("[INFO] --quick-test active: training on 2% subset for 1 epoch.")
+    elif fraction < 1.0:
+        print(f"[INFO] Using {fraction * 100:.1f}% data fraction for training.")
 
     if args.device.strip():
         train_kwargs["device"] = args.device.strip()
+    else:
+        import torch
+        if not torch.cuda.is_available():
+            train_kwargs["device"] = "cpu"
+            train_kwargs["workers"] = 0  # 0 workers avoids multi-process IPC locks on Windows CPU
+            if batch == -1:
+                train_kwargs["batch"] = 8
 
     print("\nStarting training run...")
+    print(f"Hyperparameters: {train_kwargs}\n")
     results = model.train(**train_kwargs)
 
     # ---- Step 5: Report Results and Export Weights ----
@@ -204,7 +229,6 @@ def main() -> int:
     print(f"- Run directory: {run_dir.resolve()}")
     if best_pt.exists():
         print(f"- Best weights:  {best_pt.resolve()}")
-        # Copy to root best.pt for automatic pick up by app.py
         target_best = repo_root / "best.pt"
         shutil.copy2(best_pt, target_best)
         print(f"[OK] Automatically copied best.pt to project root: {target_best}")

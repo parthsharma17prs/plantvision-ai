@@ -1,0 +1,46 @@
+PlantVision AI - PlantDoc test evaluation
+Checkpoint: best.pt
+Dataset: data_plantdoc.yaml, split=test
+Images: 239
+Ground-truth instances: 454
+
+Overall detection metrics
+Precision: 0.000000
+Recall: 0.000000
+F1: 0.000000
+mAP@50: 0.000000
+mAP@50-95: 0.000000
+Accuracy: N/A for object detection; classification accuracy is not an appropriate standalone metric here.
+
+Per-class metrics
+Class | Precision | Recall | F1 | AP50 | AP50-95
+Apple Scab Leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Apple leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Apple rust leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Bell_pepper leaf spot | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Bell_pepper leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Blueberry leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Cherry leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Corn Gray leaf spot | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Corn leaf blight | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Corn rust leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Peach leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Potato leaf early blight | N/A | N/A | N/A | N/A | N/A (no test instances)
+Potato leaf late blight | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Potato leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Raspberry leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Soyabean leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Soybean leaf | N/A | N/A | N/A | N/A | N/A (no test instances)
+Squash Powdery mildew leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Strawberry leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato Early blight leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato Septoria leaf spot | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato leaf bacterial spot | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato leaf late blight | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato leaf mosaic virus | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato leaf yellow virus | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato mold leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+Tomato two spotted spider mites leaf | N/A | N/A | N/A | N/A | N/A (no test instances)
+grape leaf black rot | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
+grape leaf | 0.000000 | 0.000000 | 0.000000 | 0.000000 | 0.000000
